@@ -77,6 +77,7 @@ Opcional:
 
  2. 📂 Preparando o Ambiente
 1. Clonar o repositório (caso esteja no GitHub):
+
    bash:
    git clone https://github.com/Artur212007/Trabalho.C.git
    
