@@ -40,7 +40,7 @@ MySQL – Armazenamento seguro e estruturado dos dados
 
 👨‍💼 Gerente do Projeto:
 Artur dos Anjos Xavier
-Github:Artur200721
+Github:Artur212007
 
 👨‍💻 Desenvolvedor Back-end:
 Yago Nascimento Abreu
