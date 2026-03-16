@@ -81,14 +81,17 @@ Opcional:
    bash:
    git clone https://github.com/Artur212007/Trabalho.C.git
    
-3. Entrar na pasta do projeto:
-   bash
-   cd src
+3. Entrar na pasta do projeto
+   bash:
+   cd Trabalho.C\src\frontend\teste-conexao
    
 4. Instalar dependências:
    bash
    npm install
    Esse comando baixa todas as bibliotecas necessárias (express, mysql2, react, etc.).
+   
+   
+   
 
  3. 🗄️ Configurando o Banco de Dados
 1. Abra o MySQL (Workbench ou terminal).
