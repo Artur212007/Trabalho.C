@@ -70,11 +70,9 @@ Antes de iniciar, certifique-se de ter instalado:
 - NPM (instalado junto com o Node.js)
 - MySQL (para o banco de dados)
 - Nodemon (instalado globalmente com npm install -g nodemon)
-
-Opcional:
 - XAMPP ou WAMP (se preferir rodar o MySQL com interface gráfica)
 - Git (para versionamento e clonagem do projeto)
-
+- Visual Studio Code
  2. 📂 Preparando o Ambiente
 1. Clonar o repositório (caso esteja no GitHub):
 
@@ -98,50 +96,16 @@ Opcional:
 2. Crie o banco de dados:
    sql
    CREATE DATABASE loja_de_ferramentas;
-   
-4. Importe o arquivo .sql do projeto (se existir) para criar as tabelas.
-5. Configure as credenciais no arquivo de conexão (geralmente config/db.js), por exemplo:
-   js:
-   const connection = mysql.createConnection({
-     host: 'localhost',
-     user: 'root',
-     password: 'sua_senha',
-     database: 'toolmaster'
-   });
+4. Importe o arquivo .sql do projeto que está dentro da pasta docs para criar as tabelas.
 
  4. 🚀 Iniciando o Servidor
 1. No terminal, execute:
    bash:
-   nodemon server.js
-   ou
-   bash:
-   nodemon app.js
-   (dependendo do nome do arquivo principal).
-   
-2. O nodemon mantém o servidor rodando e reinicia automaticamente quando você altera o código.
+   node server.js
 
  5. 🌐 Acessando o Sistema
-- Abra o navegador e digite:
-  http://localhost:3000
-  ou a porta configurada no projeto (pode ser 8080, 5000, etc.).
-
-Se o projeto tiver front-end separado (React):
-1. Entre na pasta frontend:
-   bash:
-   cd frontend
-   
-3. Instale as dependências:
-   bash:
-   npm install
-
-4. Rode o front-end:
-   bash:
-   npm start
-
-5. O React abrirá automaticamente em http://localhost:3000 (ou outra porta).
+1. vá até o Visual Studio Code, dentro da pasta do projeto no vscode abra o terminal que tem dentro do programa e digite npm run dev
 
 
- 6. 📌 Observações Importantes
-- Se usar Apache/XAMPP, apenas garanta que o MySQL esteja ativo. O Node.js já funciona como servidor HTTP, então o Apache não é obrigatório.
-- Caso a porta esteja ocupada, altere no código (ex.: app.listen(4000)).
+ 7. 📌 Observação Importante
 - Sempre verifique se o banco está rodando antes de iniciar o servidor.
