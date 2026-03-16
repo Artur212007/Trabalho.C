@@ -1,0 +1,117 @@
+:root {
+  --primaria: #FFD100;
+  --secundaria: #1A1A1A;
+  --destaque: #71797E;
+  --bg: #F5F5F5;
+  --alerta: #FF4500;
+}
+
+.sidebar {
+  width: 240px;
+  height: 100vh;
+  background: var(--secundaria);
+  color: white;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  flex-shrink: 0;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.logo-icon {
+  background: var(--primaria);
+  color: black;
+  font-weight: bold;
+  padding: 10px;
+  border-radius: 6px;
+  margin-right: 10px;
+}
+
+.logo-text {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.menu {
+  display: flex;
+  flex-direction: column;
+  overflow-y: scroll;
+}
+
+.menu a {
+  text-decoration: none;
+  color: white;
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 5px;
+  transition: 0.2s;
+}
+
+.menu a:hover {
+  background: var(--primaria);
+  color: black;
+}
+
+.menu-title {
+  font-size: 12px;
+  margin-top: 15px;
+  margin-bottom: 5px;
+  color: var(--destaque);
+}
+
+/* ── Responsivo ── */
+.sidebar-toggle {
+  display: none;
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 300;
+  background: var(--secundaria);
+  color: white;
+  border: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 6px;
+  font-size: 18px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 200;
+}
+
+@media (max-width: 900px) {
+  .sidebar-toggle {
+    display: flex;
+  }
+
+  .sidebar {
+    position: fixed;
+    left: -260px;
+    top: 0;
+    height: 100vh;
+    z-index: 250;
+    transition: left 0.25s ease;
+  }
+
+  .sidebar.open {
+    left: 0;
+  }
+
+  .sidebar-overlay.open {
+    display: block;
+  }
+}
