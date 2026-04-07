@@ -235,88 +235,6 @@ app.get('/api/dashboard', auth, (req, res) => {
 });
 
 // =========================
-// LISTAR VENDAS
-// =========================
-app.get('/api/vendas', auth, (req, res) => {
-  const sql = `
-    SELECT 
-      v.id_venda,
-      v.valor_total,
-      v.data_venda,
-      v.status,
-      c.nome AS cliente,
-      f.nome AS vendedor
-    FROM venda v
-    LEFT JOIN cliente c ON c.id_cliente = v.id_cliente
-    LEFT JOIN funcionario f ON f.id_funcionario = v.id_vendedor
-    ORDER BY v.data_venda DESC
-  `;
-
-  db.query(sql, (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
-  });
-});
-
-// =========================
-// REGISTRAR VENDA
-// =========================
-app.post('/api/venda', auth, (req, res) => {
-  const { id_cliente, itens, valor_total } = req.body;
-
-  db.beginTransaction(err => {
-    if (err) return res.status(500).json({ error: err.message });
-
-    const sqlVenda = `
-      INSERT INTO venda (id_cliente, id_vendedor, valor_total, data_venda, status)
-      VALUES (?, ?, ?, NOW(), 1)
-    `;
-
-    db.query(sqlVenda, [id_cliente, req.user.id, valor_total], (err, result) => {
-      if (err) return db.rollback(() => res.status(500).json({ error: err.message }));
-
-      const id_venda = result.insertId;
-
-      const valores = itens.map(i => [
-        id_venda,
-        i.id_produto,
-        i.quantidade,
-        i.valor_unitario
-      ]);
-
-      db.query(
-        'INSERT INTO item_venda (id_venda, id_produto, quantidade, valor_unitario) VALUES ?',
-        [valores],
-        (err2) => {
-          if (err2) return db.rollback(() => res.status(500).json({ error: err2.message }));
-
-          const updates = itens.map(i =>
-            new Promise((resolve, reject) => {
-              db.query(
-                `UPDATE produto 
-                 SET quantidade_estoque = quantidade_estoque - ? 
-                 WHERE id_produto = ? AND quantidade_estoque >= ?`,
-                [i.quantidade, i.id_produto, i.quantidade],
-                err3 => err3 ? reject(err3) : resolve()
-              );
-            })
-          );
-
-          Promise.all(updates)
-            .then(() => {
-              db.commit(err4 => {
-                if (err4) return db.rollback(() => res.status(500).json({ error: err4.message }));
-                res.json({ success: true, id_venda });
-              });
-            })
-            .catch(err5 => db.rollback(() => res.status(500).json({ error: err5.message })));
-        }
-      );
-    });
-  });
-});
-
-// =========================
 // LISTAR PRODUTOS
 // =========================
 app.get('/api/produtos', auth, (req, res) => {
@@ -734,11 +652,21 @@ app.delete('/api/fornecedores/:id', auth, (req, res) => {
 // LISTAR FUNCIONÁRIOS
 // =========================
 app.get('/api/funcionarios', auth, (req, res) => {
-  const sql = `
-    SELECT f.id_funcionario, f.nome, f.cargo, f.salario, f.percentual_comissao, f.ativo, n.nome AS nome_cargo
-    FROM funcionario f LEFT JOIN nivel_acesso n ON n.id_nivel_acesso = f.cargo ORDER BY f.nome ASC
+  const { cargo } = req.query;
+
+  let sql = `
+    SELECT id_funcionario, nome, cargo
+    FROM funcionario
   `;
-  db.query(sql, (err, results) => {
+
+  let params = [];
+
+  if (cargo) {
+    sql += " WHERE cargo = ?";
+    params.push(cargo);
+  }
+
+  db.query(sql, params, (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(results);
   });
@@ -1000,9 +928,12 @@ app.get('/api/vendas/:id', auth, (req, res) => {
 // REGISTRAR VENDA (completo com estoque)
 // =========================
 app.post('/api/vendas', auth, (req, res) => {
-  const { id_cliente, itens, valor_total, desconto } = req.body;
+  const { id_cliente, id_vendedor, itens, valor_total, desconto } = req.body;
 
   // Validações
+  if (!id_vendedor) {
+  return res.status(400).json({ error: 'Vendedor é obrigatório' });
+}
   if (!id_cliente) {
     return res.status(400).json({ error: 'Cliente é obrigatório' });
   }
@@ -1050,7 +981,7 @@ app.post('/api/vendas', auth, (req, res) => {
             VALUES (?, ?, ?, NOW(), 1)
           `;
 
-          db.query(sqlVenda, [id_cliente, req.user.id, valorFinal], (err4, result) => {
+          db.query(sqlVenda, [id_cliente, id_vendedor, valorFinal], (err4, result) => {
             if (err4) {
               return db.rollback(() => res.status(500).json({ error: err4.message }));
             }
@@ -1317,6 +1248,935 @@ app.get('/api/vendas/periodo', auth, (req, res) => {
       total_periodo,
       quantidade: results.length,
       vendas: results
+    });
+  });
+});
+
+app.get('/api/OrdemServico', auth, (req, res) => {
+  const sql = `
+    SELECT 
+      os.id_ordem_servico,
+      os.descricao_problema,
+      os.status,
+      os.data_abertura,
+      c.nome AS nome_cliente,
+      f.nome AS nome_tecnico
+    FROM ordem_servico os
+    LEFT JOIN cliente c ON c.id_cliente = os.id_cliente
+    LEFT JOIN funcionario f ON f.id_funcionario = os.id_tecnico
+    ORDER BY os.data_abertura DESC
+  `;
+
+  db.query(sql, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
+
+app.get('/api/OrdemServico/:id', auth, (req, res) => {
+  const { id } = req.params;
+
+  const sql = `
+    SELECT 
+      os.*,
+      c.nome AS nome_cliente,
+      f.nome AS nome_tecnico
+    FROM ordem_servico os
+    LEFT JOIN cliente c ON c.id_cliente = os.id_cliente
+    LEFT JOIN funcionario f ON f.id_funcionario = os.id_tecnico
+    WHERE os.id_ordem_servico = ?
+  `;
+
+  db.query(sql, [id], (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (results.length === 0) return res.status(404).json({ error: 'OS não encontrada' });
+
+    res.json(results[0]);
+  });
+});
+
+app.post('/api/OrdemServico', auth, (req, res) => {
+  const { id_cliente, id_tecnico, descricao_problema, status } = req.body;
+
+  if (!id_cliente || !descricao_problema) {
+    return res.status(400).json({ error: 'Cliente e descrição são obrigatórios' });
+  }
+
+  const sql = `
+    INSERT INTO ordem_servico 
+    (id_cliente, id_tecnico, descricao_problema, status, data_abertura)
+    VALUES (?, ?, ?, ?, NOW())
+  `;
+
+  db.query(
+    sql,
+    [id_cliente, id_tecnico || null, descricao_problema, status || 0],
+    (err, result) => {
+      if (err) return res.status(500).json({ error: err.message });
+
+      res.status(201).json({
+        success: true,
+        id_ordem_servico: result.insertId
+      });
+    }
+  );
+});
+
+app.put('/api/OrdemServico/:id', auth, (req, res) => {
+  const { id } = req.params;
+  const { id_cliente, id_tecnico, descricao_problema, status } = req.body;
+
+  db.query(
+    'SELECT id_ordem_servico FROM ordem_servico WHERE id_ordem_servico = ?',
+    [id],
+    (err, results) => {
+      if (err) return res.status(500).json({ error: err.message });
+      if (results.length === 0) return res.status(404).json({ error: 'OS não encontrada' });
+
+      const updates = [];
+      const values = [];
+
+      if (id_cliente !== undefined) {
+        updates.push('id_cliente = ?');
+        values.push(id_cliente);
+      }
+
+      if (id_tecnico !== undefined) {
+        updates.push('id_tecnico = ?');
+        values.push(id_tecnico);
+      }
+
+      if (descricao_problema !== undefined) {
+        updates.push('descricao_problema = ?');
+        values.push(descricao_problema);
+      }
+
+      if (status !== undefined) {
+        updates.push('status = ?');
+        values.push(status);
+      }
+
+      if (updates.length === 0) {
+        return res.status(400).json({ error: 'Nada para atualizar' });
+      }
+
+      values.push(id);
+
+      const sql = `UPDATE ordem_servico SET ${updates.join(', ')} WHERE id_ordem_servico = ?`;
+
+      db.query(sql, values, (err2) => {
+        if (err2) return res.status(500).json({ error: err2.message });
+
+        res.json({ success: true, message: 'OS atualizada com sucesso' });
+      });
+    }
+  );
+});
+
+app.delete('/api/OrdemServico/:id', auth, (req, res) => {
+  const { id } = req.params;
+
+  db.query(
+    'SELECT id_ordem_servico FROM ordem_servico WHERE id_ordem_servico = ?',
+    [id],
+    (err, results) => {
+      if (err) return res.status(500).json({ error: err.message });
+      if (results.length === 0) return res.status(404).json({ error: 'OS não encontrada' });
+
+      db.query(
+        'DELETE FROM ordem_servico WHERE id_ordem_servico = ?',
+        [id],
+        (err2) => {
+          if (err2) return res.status(500).json({ error: err2.message });
+
+          res.json({ success: true, message: 'OS deletada com sucesso' });
+        }
+      );
+    }
+  );
+});
+
+
+  app.get('/api/orcamentos', auth, (req, res) => {
+  const sql = `
+    SELECT 
+      o.*,
+      c.nome AS nome_cliente,
+      f.nome AS nome_tecnico
+    FROM orcamento o
+    LEFT JOIN cliente c ON c.id_cliente = o.id_cliente
+    LEFT JOIN funcionario f ON f.id_funcionario = o.id_tecnico
+    ORDER BY o.data DESC
+  `;
+
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ error: err.message });
+    }
+
+    res.json(results);
+  });
+});
+
+app.get('/api/orcamentos/:id', auth, (req, res) => {
+  const { id } = req.params;
+
+  const sql = `
+    SELECT *
+    FROM orcamento
+    WHERE id_orcamento = ?
+  `;
+
+  db.query(sql, [id], (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+
+    if (results.length === 0) {
+      return res.status(404).json({ error: 'Orçamento não encontrado' });
+    }
+
+    res.json(results[0]);
+  });
+});
+
+app.post('/api/orcamentos', auth, (req, res) => {
+  const {
+    id_cliente,
+    id_tecnico,
+    descricao,
+    dados,
+    valor_total,
+    validade,
+    status
+  } = req.body;
+
+  if (!id_cliente || !valor_total) {
+    return res.status(400).json({
+      error: 'Cliente e valor são obrigatórios'
+    });
+  }
+
+  const sql = `
+    INSERT INTO orcamento
+    (id_cliente, id_tecnico, descricao, dados, valor_total, data, validade, status)
+    VALUES (?, ?, ?, ?, ?, NOW(), ?, ?)
+  `;
+
+  db.query(
+    sql,
+    [
+      id_cliente,
+      id_tecnico || null,
+      descricao || null,
+      dados || null,
+      valor_total,
+      validade || null,
+      status || 0
+    ],
+    (err, result) => {
+      if (err) return res.status(500).json({ error: err.message });
+
+      res.status(201).json({
+        success: true,
+        id_orcamento: result.insertId
+      });
+    }
+  );
+});
+
+
+app.put('/api/orcamentos/:id', auth, (req, res) => {
+  const { id } = req.params;
+
+  const {
+    id_cliente,
+    id_tecnico,
+    descricao,
+    dados,
+    valor_total,
+    validade,
+    status
+  } = req.body;
+
+  const updates = [];
+  const values = [];
+
+  if (id_cliente !== undefined) {
+    updates.push('id_cliente = ?');
+    values.push(id_cliente);
+  }
+
+  if (id_tecnico !== undefined) {
+    updates.push('id_tecnico = ?');
+    values.push(id_tecnico);
+  }
+
+  if (descricao !== undefined) {
+    updates.push('descricao = ?');
+    values.push(descricao);
+  }
+
+  if (dados !== undefined) {
+    updates.push('dados = ?');
+    values.push(dados);
+  }
+
+  if (valor_total !== undefined) {
+    updates.push('valor_total = ?');
+    values.push(valor_total);
+  }
+
+  if (validade !== undefined) {
+    updates.push('validade = ?');
+    values.push(validade);
+  }
+
+  if (status !== undefined) {
+    updates.push('status = ?');
+    values.push(status);
+  }
+
+  if (updates.length === 0) {
+    return res.status(400).json({ error: 'Nada para atualizar' });
+  }
+
+  values.push(id);
+
+  const sql = `
+    UPDATE orcamento
+    SET ${updates.join(', ')} 
+    WHERE id_orcamento = ?
+  `;
+
+  db.query(sql, values, (err) => {
+    if (err) return res.status(500).json({ error: err.message });
+
+    res.json({ success: true });
+  });
+});
+
+app.delete('/api/orcamentos/:id', auth, (req, res) => {
+  const { id } = req.params;
+
+  db.query(
+    'SELECT id_orcamento FROM orcamento WHERE id_orcamento = ?',
+    [id],
+    (err, results) => {
+      if (err) return res.status(500).json({ error: err.message });
+
+      if (results.length === 0) {
+        return res.status(404).json({ error: 'Orçamento não encontrado' });
+      }
+
+      db.query(
+        'DELETE FROM orcamento WHERE id_orcamento = ?',
+        [id],
+        (err2) => {
+          if (err2) return res.status(500).json({ error: err2.message });
+
+          res.json({
+            success: true,
+            message: 'Orçamento deletado com sucesso'
+          });
+        }
+      );
+    }
+  );
+});
+
+// =========================
+// LISTAR TÉCNICOS (DEVE VIR PRIMEIRO)
+// =========================
+app.get('/api/caixa/tecnicos', auth, (req, res) => {
+  const sql = `
+    SELECT 
+      f.id_funcionario,
+      f.nome,
+      f.cargo
+    FROM funcionario f
+    WHERE f.cargo = 5 AND f.ativo = 1
+    ORDER BY f.nome ASC
+  `;
+
+  db.query(sql, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
+
+// =========================
+// LISTAR CAIXA
+// =========================
+app.get('/api/caixa', auth, (req, res) => {
+  const sql = `
+    SELECT 
+      c.id_caixa,
+      c.data,
+      c.valor_abertura,
+      c.valor_fechamento,
+      c.saldo,
+      c.id_funcionario,
+      f.nome AS funcionario_nome
+    FROM caixa c
+    LEFT JOIN funcionario f ON f.id_funcionario = c.id_funcionario
+    ORDER BY c.data DESC
+  `;
+
+  db.query(sql, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
+
+// =========================
+// RESUMO DO CAIXA DO DIA
+// =========================
+app.get('/api/caixa/resumo/dia', auth, (req, res) => {
+  const sql = `
+    SELECT 
+      c.id_caixa,
+      c.valor_abertura,
+      c.saldo,
+      c.data,
+      f.nome AS funcionario_nome,
+      CASE 
+        WHEN c.valor_fechamento IS NULL THEN 'Aberto'
+        ELSE 'Fechado'
+      END AS status
+    FROM caixa c
+    LEFT JOIN funcionario f ON f.id_funcionario = c.id_funcionario
+    WHERE DATE(c.data) = CURDATE()
+    ORDER BY c.data DESC
+    LIMIT 1
+  `;
+
+  db.query(sql, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    
+    if (results.length === 0) {
+      return res.json({ 
+        status: 'Fechado',
+        message: 'Nenhum caixa aberto hoje'
+      });
+    }
+    
+    res.json(results[0]);
+  });
+});
+
+// =========================
+// HISTÓRICO DE CAIXA POR PERÍODO
+// =========================
+app.get('/api/caixa/historico', auth, (req, res) => {
+  const { data_inicio, data_fim } = req.query;
+  
+  let sql = `
+    SELECT 
+      c.id_caixa,
+      DATE(c.data) AS data,
+      c.valor_abertura,
+      c.valor_fechamento,
+      c.saldo,
+      f.nome AS funcionario_nome
+    FROM caixa c
+    LEFT JOIN funcionario f ON f.id_funcionario = c.id_funcionario
+    WHERE 1=1
+  `;
+  
+  const params = [];
+  
+  if (data_inicio) {
+    sql += ' AND DATE(c.data) >= ?';
+    params.push(data_inicio);
+  }
+  
+  if (data_fim) {
+    sql += ' AND DATE(c.data) <= ?';
+    params.push(data_fim);
+  }
+  
+  sql += ' ORDER BY c.data DESC';
+  
+  db.query(sql, params, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    
+    const total_abertura = results.reduce((sum, r) => sum + r.valor_abertura, 0);
+    const total_fechamento = results.reduce((sum, r) => sum + (r.valor_fechamento || 0), 0);
+    const saldo_total = results.reduce((sum, r) => sum + r.saldo, 0);
+    
+    res.json({
+      total_registros: results.length,
+      total_abertura,
+      total_fechamento,
+      saldo_total,
+      registros: results
+    });
+  });
+});
+
+// =========================
+// BUSCAR CAIXA POR ID (DEVE VIR POR ÚLTIMO)
+// =========================
+app.get('/api/caixa/:id', auth, (req, res) => {
+  const { id } = req.params;
+
+  const sql = `
+    SELECT 
+      c.id_caixa,
+      c.data,
+      c.valor_abertura,
+      c.valor_fechamento,
+      c.saldo,
+      c.id_funcionario,
+      f.nome AS funcionario_nome
+    FROM caixa c
+    LEFT JOIN funcionario f ON f.id_funcionario = c.id_funcionario
+    WHERE c.id_caixa = ?
+  `;
+
+  db.query(sql, [id], (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (results.length === 0) return res.status(404).json({ error: 'Registro de caixa não encontrado' });
+    res.json(results[0]);
+  });
+});
+
+// =========================
+// CRIAR REGISTRO DE CAIXA (Abertura)
+// =========================
+app.post('/api/caixa', auth, (req, res) => {
+  const { valor_abertura, id_funcionario } = req.body;
+
+  if (!valor_abertura || !id_funcionario) {
+    return res.status(400).json({ 
+      error: 'Campos obrigatórios: valor_abertura, id_funcionario' 
+    });
+  }
+
+  if (valor_abertura < 0) {
+    return res.status(400).json({ error: 'Valor de abertura não pode ser negativo' });
+  }
+
+  // Verifica se já existe um caixa aberto para hoje
+  const checkSql = `
+    SELECT id_caixa FROM caixa 
+    WHERE DATE(data) = CURDATE() AND valor_fechamento IS NULL
+  `;
+
+  db.query(checkSql, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    
+    if (results.length > 0) {
+      return res.status(400).json({ error: 'Já existe um caixa aberto para hoje' });
+    }
+
+    const sql = `
+      INSERT INTO caixa (data, valor_abertura, valor_fechamento, saldo, id_funcionario)
+      VALUES (NOW(), ?, NULL, ?, ?)
+    `;
+
+    db.query(sql, [valor_abertura, valor_abertura, id_funcionario], (err2, result) => {
+      if (err2) return res.status(500).json({ error: err2.message });
+      
+      res.status(201).json({ 
+        success: true, 
+        message: 'Caixa aberto com sucesso',
+        id_caixa: result.insertId
+      });
+    });
+  });
+});
+
+// =========================
+// FECHAR CAIXA (atualizar valor_fechamento)
+// =========================
+app.put('/api/caixa/:id/fechar', auth, (req, res) => {
+  const { id } = req.params;
+  const { valor_fechamento } = req.body;
+
+  if (!valor_fechamento) {
+    return res.status(400).json({ error: 'Valor de fechamento é obrigatório' });
+  }
+
+  // Verifica se o caixa existe e está aberto
+  const checkSql = `
+    SELECT id_caixa, valor_abertura, saldo FROM caixa 
+    WHERE id_caixa = ? AND valor_fechamento IS NULL
+  `;
+
+  db.query(checkSql, [id], (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (results.length === 0) {
+      return res.status(404).json({ error: 'Caixa não encontrado ou já está fechado' });
+    }
+
+    const sql = `
+      UPDATE caixa 
+      SET valor_fechamento = ? 
+      WHERE id_caixa = ?
+    `;
+
+    db.query(sql, [valor_fechamento, id], (err2) => {
+      if (err2) return res.status(500).json({ error: err2.message });
+      
+      res.json({ success: true, message: 'Caixa fechado com sucesso' });
+    });
+  });
+});
+
+// =========================
+// ATUALIZAR SALDO DO CAIXA
+// =========================
+app.put('/api/caixa/:id/saldo', auth, (req, res) => {
+  const { id } = req.params;
+  const { saldo } = req.body;
+
+  if (saldo === undefined) {
+    return res.status(400).json({ error: 'Saldo é obrigatório' });
+  }
+
+  // Verifica se o caixa existe e está aberto
+  const checkSql = `
+    SELECT id_caixa FROM caixa 
+    WHERE id_caixa = ? AND valor_fechamento IS NULL
+  `;
+
+  db.query(checkSql, [id], (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (results.length === 0) {
+      return res.status(404).json({ error: 'Caixa não encontrado ou está fechado' });
+    }
+
+    const sql = `UPDATE caixa SET saldo = ? WHERE id_caixa = ?`;
+
+    db.query(sql, [saldo, id], (err2) => {
+      if (err2) return res.status(500).json({ error: err2.message });
+      
+      res.json({ success: true, message: 'Saldo atualizado com sucesso' });
+    });
+  });
+});
+
+// =========================
+// ATUALIZAR REGISTRO DE CAIXA (completo)
+// =========================
+app.put('/api/caixa/:id', auth, (req, res) => {
+  const { id } = req.params;
+  const { data, valor_abertura, valor_fechamento, saldo, id_funcionario } = req.body;
+
+  // Verifica se o caixa existe
+  const checkSql = 'SELECT id_caixa FROM caixa WHERE id_caixa = ?';
+  
+  db.query(checkSql, [id], (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (results.length === 0) {
+      return res.status(404).json({ error: 'Registro de caixa não encontrado' });
+    }
+
+    const updates = [];
+    const values = [];
+
+    if (data !== undefined) {
+      updates.push('data = ?');
+      values.push(data);
+    }
+    if (valor_abertura !== undefined) {
+      updates.push('valor_abertura = ?');
+      values.push(valor_abertura);
+    }
+    if (valor_fechamento !== undefined) {
+      updates.push('valor_fechamento = ?');
+      values.push(valor_fechamento);
+    }
+    if (saldo !== undefined) {
+      updates.push('saldo = ?');
+      values.push(saldo);
+    }
+    if (id_funcionario !== undefined) {
+      updates.push('id_funcionario = ?');
+      values.push(id_funcionario);
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'Nenhum campo para atualizar' });
+    }
+
+    values.push(id);
+    const sql = `UPDATE caixa SET ${updates.join(', ')} WHERE id_caixa = ?`;
+
+    db.query(sql, values, (err2) => {
+      if (err2) return res.status(500).json({ error: err2.message });
+      res.json({ success: true, message: 'Registro de caixa atualizado com sucesso' });
+    });
+  });
+});
+
+// =========================
+// DELETAR REGISTRO DE CAIXA
+// =========================
+app.delete('/api/caixa/:id', auth, (req, res) => {
+  const { id } = req.params;
+
+  // Verifica se o caixa existe
+  const checkSql = 'SELECT id_caixa FROM caixa WHERE id_caixa = ?';
+  
+  db.query(checkSql, [id], (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (results.length === 0) {
+      return res.status(404).json({ error: 'Registro de caixa não encontrado' });
+    }
+
+    const sql = 'DELETE FROM caixa WHERE id_caixa = ?';
+    
+    db.query(sql, [id], (err2) => {
+      if (err2) return res.status(500).json({ error: err2.message });
+      res.json({ success: true, message: 'Registro de caixa excluído com sucesso' });
+    });
+  });
+});
+
+// =========================
+// LISTAR CLIENTES PARA PAGAMENTO
+// =========================
+app.get('/api/clientes/pagamentos', auth, (req, res) => {
+  const sql = `
+    SELECT id_cliente, nome 
+    FROM cliente 
+    WHERE ativo = 1 
+    ORDER BY nome ASC
+  `;
+  
+  db.query(sql, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
+
+// =========================
+// LISTAR VENDAS PARA PAGAMENTO
+// =========================
+app.get('/api/vendas/pagamentos', auth, (req, res) => {
+  const sql = `
+    SELECT 
+      v.id_venda, 
+      v.valor_total, 
+      v.data_venda,
+      c.nome AS cliente_nome
+    FROM venda v
+    LEFT JOIN cliente c ON c.id_cliente = v.id_cliente
+    WHERE v.status = 1
+    ORDER BY v.data_venda DESC
+  `;
+  
+  db.query(sql, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
+
+// =========================
+// LISTAR PAGAMENTOS
+// =========================
+app.get('/api/pagamentos', auth, (req, res) => {
+  const sql = `
+    SELECT 
+      p.id_pagamento,
+      p.valor,
+      p.data_pagamento,
+      p.forma_pagamento,
+      p.status,
+      p.descricao,
+      p.id_venda,
+      p.id_cliente,
+      c.nome AS cliente_nome
+    FROM pagamento p
+    LEFT JOIN cliente c ON c.id_cliente = p.id_cliente
+    ORDER BY p.data_pagamento DESC
+  `;
+
+  db.query(sql, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
+
+// =========================
+// BUSCAR PAGAMENTO POR ID
+// =========================
+app.get('/api/pagamentos/:id', auth, (req, res) => {
+  const { id } = req.params;
+
+  const sql = `
+    SELECT 
+      p.id_pagamento,
+      p.valor,
+      p.data_pagamento,
+      p.forma_pagamento,
+      p.status,
+      p.descricao,
+      p.id_venda,
+      p.id_cliente,
+      c.nome AS cliente_nome
+    FROM pagamento p
+    LEFT JOIN cliente c ON c.id_cliente = p.id_cliente
+    WHERE p.id_pagamento = ?
+  `;
+
+  db.query(sql, [id], (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (results.length === 0) return res.status(404).json({ error: 'Pagamento não encontrado' });
+    res.json(results[0]);
+  });
+});
+
+// =========================
+// CRIAR PAGAMENTO
+// =========================
+app.post('/api/pagamentos', auth, (req, res) => {
+  const { valor, data_pagamento, forma_pagamento, status, descricao, id_venda, id_cliente } = req.body;
+
+  if (!valor || !forma_pagamento || !id_cliente) {
+    return res.status(400).json({ 
+      error: 'Campos obrigatórios: valor, forma_pagamento, id_cliente' 
+    });
+  }
+
+  if (valor <= 0) {
+    return res.status(400).json({ error: 'Valor deve ser maior que zero' });
+  }
+
+  const sql = `
+    INSERT INTO pagamento 
+    (valor, data_pagamento, forma_pagamento, status, descricao, id_venda, id_cliente)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `;
+
+  db.query(sql, [
+    valor, 
+    data_pagamento || new Date(), 
+    forma_pagamento, 
+    status || 1, 
+    descricao || null, 
+    id_venda || null, 
+    id_cliente
+  ], (err, result) => {
+    if (err) return res.status(500).json({ error: err.message });
+    
+    res.status(201).json({ 
+      success: true, 
+      message: 'Pagamento registrado com sucesso',
+      id_pagamento: result.insertId
+    });
+  });
+});
+
+// =========================
+// ATUALIZAR PAGAMENTO
+// =========================
+app.put('/api/pagamentos/:id', auth, (req, res) => {
+  const { id } = req.params;
+  const { valor, data_pagamento, forma_pagamento, status, descricao, id_venda, id_cliente } = req.body;
+
+  const checkSql = 'SELECT id_pagamento FROM pagamento WHERE id_pagamento = ?';
+  
+  db.query(checkSql, [id], (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (results.length === 0) return res.status(404).json({ error: 'Pagamento não encontrado' });
+
+    const updates = [];
+    const values = [];
+
+    if (valor !== undefined) {
+      updates.push('valor = ?');
+      values.push(valor);
+    }
+    if (data_pagamento !== undefined) {
+      updates.push('data_pagamento = ?');
+      values.push(data_pagamento);
+    }
+    if (forma_pagamento !== undefined) {
+      updates.push('forma_pagamento = ?');
+      values.push(forma_pagamento);
+    }
+    if (status !== undefined) {
+      updates.push('status = ?');
+      values.push(status);
+    }
+    if (descricao !== undefined) {
+      updates.push('descricao = ?');
+      values.push(descricao);
+    }
+    if (id_venda !== undefined) {
+      updates.push('id_venda = ?');
+      values.push(id_venda || null);
+    }
+    if (id_cliente !== undefined) {
+      updates.push('id_cliente = ?');
+      values.push(id_cliente);
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'Nenhum campo para atualizar' });
+    }
+
+    values.push(id);
+    const sql = `UPDATE pagamento SET ${updates.join(', ')} WHERE id_pagamento = ?`;
+
+    db.query(sql, values, (err2) => {
+      if (err2) return res.status(500).json({ error: err2.message });
+      res.json({ success: true, message: 'Pagamento atualizado com sucesso' });
+    });
+  });
+});
+
+// =========================
+// DELETAR PAGAMENTO
+// =========================
+app.delete('/api/pagamentos/:id', auth, (req, res) => {
+  const { id } = req.params;
+
+  const checkSql = 'SELECT id_pagamento FROM pagamento WHERE id_pagamento = ?';
+  
+  db.query(checkSql, [id], (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (results.length === 0) return res.status(404).json({ error: 'Pagamento não encontrado' });
+
+    const sql = 'DELETE FROM pagamento WHERE id_pagamento = ?';
+    
+    db.query(sql, [id], (err2) => {
+      if (err2) return res.status(500).json({ error: err2.message });
+      res.json({ success: true, message: 'Pagamento excluído com sucesso' });
+    });
+  });
+});
+
+app.put('/api/pagamentos/:id/baixar', auth, (req, res) => {
+  const { id } = req.params;
+
+  const checkSql = 'SELECT id_pagamento, status FROM pagamento WHERE id_pagamento = ?';
+  
+  db.query(checkSql, [id], (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (results.length === 0) return res.status(404).json({ error: 'Pagamento não encontrado' });
+    
+    if (results[0].status === 'pago') {
+      return res.status(400).json({ error: 'Pagamento já foi baixado' });
+    }
+
+    const sql = `
+      UPDATE pagamento 
+      SET status = 'pago', 
+          data_pagamento = NOW() 
+      WHERE id_pagamento = ?
+    `;
+
+    db.query(sql, [id], (err2) => {
+      if (err2) return res.status(500).json({ error: err2.message });
+      
+      res.json({ 
+        success: true, 
+        message: 'Pagamento baixado com sucesso'
+      });
     });
   });
 });

@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Tempo de geração: 06/04/2026 às 21:13
--- Versão do servidor: 10.4.6-MariaDB
--- Versão do PHP: 7.3.10
+-- Tempo de geração: 07/04/2026 às 06:14
+-- Versão do servidor: 10.4.32-MariaDB
+-- Versão do PHP: 8.2.12
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -31,10 +31,10 @@ CREATE TABLE `caixa` (
   `id_caixa` int(11) NOT NULL,
   `data` datetime NOT NULL,
   `valor_abertura` int(11) NOT NULL,
-  `valor_fechamento` int(11) NOT NULL,
+  `valor_fechamento` decimal(10,2) DEFAULT NULL,
   `saldo` int(11) NOT NULL,
   `id_funcionario` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -53,7 +53,7 @@ CREATE TABLE `cliente` (
   `senha` varchar(255) DEFAULT NULL,
   `usuario` varchar(150) DEFAULT NULL,
   `nivel_acesso` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Despejando dados para a tabela `cliente`
@@ -75,7 +75,7 @@ CREATE TABLE `fornecedor` (
   `telefone` char(11) DEFAULT NULL,
   `email` varchar(255) DEFAULT NULL,
   `endereco` varchar(150) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Despejando dados para a tabela `fornecedor`
@@ -98,7 +98,7 @@ CREATE TABLE `funcionario` (
   `salario` decimal(10,2) NOT NULL,
   `percentual_comissao` decimal(5,2) DEFAULT 0.00,
   `ativo` tinyint(1) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Despejando dados para a tabela `funcionario`
@@ -123,7 +123,14 @@ CREATE TABLE `item_venda` (
   `id_produto` int(11) NOT NULL,
   `quantidade` int(11) NOT NULL,
   `valor_unitario` decimal(10,2) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+
+--
+-- Despejando dados para a tabela `item_venda`
+--
+
+INSERT INTO `item_venda` (`id_item_venda`, `id_venda`, `id_produto`, `quantidade`, `valor_unitario`) VALUES
+(14, 11, 4, 1, 189.00);
 
 -- --------------------------------------------------------
 
@@ -134,7 +141,7 @@ CREATE TABLE `item_venda` (
 CREATE TABLE `nivel_acesso` (
   `id_nivel_acesso` int(11) NOT NULL,
   `nome` varchar(50) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Despejando dados para a tabela `nivel_acesso`
@@ -160,8 +167,18 @@ CREATE TABLE `orcamento` (
   `valor_total` int(11) NOT NULL,
   `data` datetime DEFAULT NULL,
   `validade` date NOT NULL,
-  `status` tinyint(1) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `status` tinyint(1) DEFAULT NULL,
+  `id_tecnico` int(11) DEFAULT NULL,
+  `descricao` text DEFAULT NULL,
+  `dados` text DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Despejando dados para a tabela `orcamento`
+--
+
+INSERT INTO `orcamento` (`id_orcamento`, `id_cliente`, `valor_total`, `data`, `validade`, `status`, `id_tecnico`, `descricao`, `dados`) VALUES
+(3, 1, 122, '2026-04-06 23:17:42', '2009-08-12', 0, 3, 'vfiwvfds', 'nnff');
 
 -- --------------------------------------------------------
 
@@ -177,7 +194,7 @@ CREATE TABLE `ordem_servico` (
   `estado_equipamento` varchar(20) NOT NULL,
   `status` tinyint(1) NOT NULL,
   `data_abertura` datetime NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Despejando dados para a tabela `ordem_servico`
@@ -185,6 +202,44 @@ CREATE TABLE `ordem_servico` (
 
 INSERT INTO `ordem_servico` (`id_ordem_servico`, `id_cliente`, `id_tecnico`, `descricao_problema`, `estado_equipamento`, `status`, `data_abertura`) VALUES
 (1, 1, 3, 'Furadeira não liga', 'Defeito elétrico', 1, '2026-04-05 09:06:27');
+
+-- --------------------------------------------------------
+
+--
+-- Estrutura para tabela `pagamento`
+--
+
+CREATE TABLE `pagamento` (
+  `id_pagamento` int(11) NOT NULL,
+  `id_venda` int(11) DEFAULT NULL,
+  `id_ordem_servico` int(11) DEFAULT NULL,
+  `id_cliente` int(11) NOT NULL,
+  `valor` decimal(10,2) NOT NULL,
+  `forma_pagamento` enum('dinheiro','cartao_credito','cartao_debito','pix','boleto','transferencia') NOT NULL,
+  `parcelas` int(11) DEFAULT 1,
+  `status` enum('pendente','pago','cancelado') DEFAULT 'pendente',
+  `data_pagamento` datetime DEFAULT NULL,
+  `data_vencimento` date NOT NULL,
+  `descricao` varchar(255) DEFAULT NULL,
+  `created_at` datetime DEFAULT current_timestamp(),
+  `updated_at` datetime DEFAULT NULL ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estrutura para tabela `pagamento_parcela`
+--
+
+CREATE TABLE `pagamento_parcela` (
+  `id_parcela` int(11) NOT NULL,
+  `id_pagamento` int(11) NOT NULL,
+  `numero_parcela` int(11) NOT NULL,
+  `valor` decimal(10,2) NOT NULL,
+  `data_vencimento` date NOT NULL,
+  `data_pagamento` datetime DEFAULT NULL,
+  `status` enum('pendente','pago','atrasado') DEFAULT 'pendente'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -202,7 +257,7 @@ CREATE TABLE `produto` (
   `garantia` int(11) NOT NULL,
   `id_fornecedor` int(11) NOT NULL,
   `tipo` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Despejando dados para a tabela `produto`
@@ -210,9 +265,9 @@ CREATE TABLE `produto` (
 
 INSERT INTO `produto` (`id_produto`, `nome`, `preco_custo`, `preco_venda`, `quantidade_estoque`, `estoque_minimo`, `garantia`, `id_fornecedor`, `tipo`) VALUES
 (1, 'Furadeira Elétrica', 150, 299, 49, 10, 12, 1, 1),
-(2, 'Parafusadeira', 120, 249, 42, 8, 12, 1, 1),
+(2, 'Parafusadeira', 120, 249, 39, 8, 12, 1, 1),
 (3, 'Serra Circular', 280, 549, 19, 5, 24, 2, 1),
-(4, 'Lixadeira', 90, 189, 33, 7, 12, 1, 1);
+(4, 'Lixadeira', 90, 189, 31, 7, 12, 1, 1);
 
 -- --------------------------------------------------------
 
@@ -226,7 +281,7 @@ CREATE TABLE `reparo` (
   `descricao_servico` varchar(150) NOT NULL,
   `custo` int(11) NOT NULL,
   `data` date NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Despejando dados para a tabela `reparo`
@@ -249,7 +304,7 @@ CREATE TABLE `usuario` (
   `ativo` tinyint(1) NOT NULL,
   `data_criacao` datetime DEFAULT current_timestamp(),
   `id_funcionario` int(11) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Despejando dados para a tabela `usuario`
@@ -275,7 +330,14 @@ CREATE TABLE `venda` (
   `valor_total` int(11) NOT NULL,
   `data_venda` datetime DEFAULT NULL,
   `status` tinyint(1) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+
+--
+-- Despejando dados para a tabela `venda`
+--
+
+INSERT INTO `venda` (`id_venda`, `id_cliente`, `id_vendedor`, `valor_total`, `data_venda`, `status`) VALUES
+(11, 2, 2, 189, '2026-04-06 21:58:05', 1);
 
 --
 -- Índices para tabelas despejadas
@@ -329,7 +391,8 @@ ALTER TABLE `nivel_acesso`
 --
 ALTER TABLE `orcamento`
   ADD PRIMARY KEY (`id_orcamento`),
-  ADD KEY `id_cliente` (`id_cliente`);
+  ADD KEY `id_cliente` (`id_cliente`),
+  ADD KEY `fk_orcamento_tecnico` (`id_tecnico`);
 
 --
 -- Índices de tabela `ordem_servico`
@@ -338,6 +401,22 @@ ALTER TABLE `ordem_servico`
   ADD PRIMARY KEY (`id_ordem_servico`),
   ADD KEY `id_cliente` (`id_cliente`),
   ADD KEY `id_tecnico` (`id_tecnico`);
+
+--
+-- Índices de tabela `pagamento`
+--
+ALTER TABLE `pagamento`
+  ADD PRIMARY KEY (`id_pagamento`),
+  ADD KEY `id_venda` (`id_venda`),
+  ADD KEY `id_ordem_servico` (`id_ordem_servico`),
+  ADD KEY `id_cliente` (`id_cliente`);
+
+--
+-- Índices de tabela `pagamento_parcela`
+--
+ALTER TABLE `pagamento_parcela`
+  ADD PRIMARY KEY (`id_parcela`),
+  ADD KEY `id_pagamento` (`id_pagamento`);
 
 --
 -- Índices de tabela `produto`
@@ -378,7 +457,7 @@ ALTER TABLE `venda`
 -- AUTO_INCREMENT de tabela `caixa`
 --
 ALTER TABLE `caixa`
-  MODIFY `id_caixa` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_caixa` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT de tabela `cliente`
@@ -402,7 +481,7 @@ ALTER TABLE `funcionario`
 -- AUTO_INCREMENT de tabela `item_venda`
 --
 ALTER TABLE `item_venda`
-  MODIFY `id_item_venda` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id_item_venda` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT de tabela `nivel_acesso`
@@ -414,13 +493,25 @@ ALTER TABLE `nivel_acesso`
 -- AUTO_INCREMENT de tabela `orcamento`
 --
 ALTER TABLE `orcamento`
-  MODIFY `id_orcamento` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_orcamento` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT de tabela `ordem_servico`
 --
 ALTER TABLE `ordem_servico`
-  MODIFY `id_ordem_servico` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id_ordem_servico` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT de tabela `pagamento`
+--
+ALTER TABLE `pagamento`
+  MODIFY `id_pagamento` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT de tabela `pagamento_parcela`
+--
+ALTER TABLE `pagamento_parcela`
+  MODIFY `id_parcela` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT de tabela `produto`
@@ -444,7 +535,7 @@ ALTER TABLE `usuario`
 -- AUTO_INCREMENT de tabela `venda`
 --
 ALTER TABLE `venda`
-  MODIFY `id_venda` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id_venda` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- Restrições para tabelas despejadas
@@ -479,6 +570,7 @@ ALTER TABLE `item_venda`
 -- Restrições para tabelas `orcamento`
 --
 ALTER TABLE `orcamento`
+  ADD CONSTRAINT `fk_orcamento_tecnico` FOREIGN KEY (`id_tecnico`) REFERENCES `funcionario` (`id_funcionario`),
   ADD CONSTRAINT `orcamento_ibfk_1` FOREIGN KEY (`id_cliente`) REFERENCES `cliente` (`id_cliente`) ON DELETE CASCADE;
 
 --
@@ -487,6 +579,20 @@ ALTER TABLE `orcamento`
 ALTER TABLE `ordem_servico`
   ADD CONSTRAINT `ordem_servico_ibfk_1` FOREIGN KEY (`id_cliente`) REFERENCES `cliente` (`id_cliente`) ON DELETE CASCADE,
   ADD CONSTRAINT `ordem_servico_ibfk_2` FOREIGN KEY (`id_tecnico`) REFERENCES `funcionario` (`id_funcionario`);
+
+--
+-- Restrições para tabelas `pagamento`
+--
+ALTER TABLE `pagamento`
+  ADD CONSTRAINT `pagamento_ibfk_1` FOREIGN KEY (`id_venda`) REFERENCES `venda` (`id_venda`) ON DELETE SET NULL,
+  ADD CONSTRAINT `pagamento_ibfk_2` FOREIGN KEY (`id_ordem_servico`) REFERENCES `ordem_servico` (`id_ordem_servico`) ON DELETE SET NULL,
+  ADD CONSTRAINT `pagamento_ibfk_3` FOREIGN KEY (`id_cliente`) REFERENCES `cliente` (`id_cliente`);
+
+--
+-- Restrições para tabelas `pagamento_parcela`
+--
+ALTER TABLE `pagamento_parcela`
+  ADD CONSTRAINT `pagamento_parcela_ibfk_1` FOREIGN KEY (`id_pagamento`) REFERENCES `pagamento` (`id_pagamento`) ON DELETE CASCADE;
 
 --
 -- Restrições para tabelas `produto`

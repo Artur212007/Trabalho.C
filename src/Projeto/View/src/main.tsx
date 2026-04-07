@@ -16,6 +16,15 @@ import Funcionarios    from "./pages/funcionarios/funcionarios";
 import FuncionarioForm from "./pages/funcionarios/FuncionarioForm";
 import Vendas          from "./pages/vendas/vendas";
 import VendasForm      from "./pages/vendas/VendasForm";
+import VendasDetalhes   from "./pages/vendas/VendasDetalhes";
+import Ordem         from "./pages/OrdemServico/OrdemServico";
+import OrdemForm    from "./pages/OrdemServico/OrdemServicoForm";
+import Orcamento       from "./pages/orcamentos/Orcamento";
+import OrcamentoForm   from "./pages/orcamentos/OrcamentoForm";
+import Caixa      from "./pages/FluxoCaixa/FluxoCaixa";
+import CaixaForm   from "./pages/FluxoCaixa/FluxoCaixaForm";
+import Pagamentos      from "./pages/Pagamentos/Pagamentos";
+import PagamentosForm   from "./pages/Pagamentos/PagamentosForm";
 
 import "./index.css";
 
@@ -41,9 +50,22 @@ createRoot(root!).render(
       <Route path="/funcionarios"            element={<Funcionarios />} />
       <Route path="/funcionarios/novo"       element={<FuncionarioForm />} />
       <Route path="/funcionarios/editar/:id" element={<FuncionarioForm />} />
-       <Route path="/vendas"                 element={<Vendas />} />
+      <Route path="/vendas"                  element={<Vendas />} />
       <Route path="/vendas/novo"             element={<VendasForm />} />
       <Route path="/vendas/editar/:id"       element={<VendasForm />} />
+      <Route path="/vendas/:id"              element={<VendasDetalhes />} />
+      <Route path="/ordem"                   element={<Ordem />} />
+      <Route path="/ordem/novo"              element={<OrdemForm />} />
+      <Route path="/ordem/editar/:id"        element={<OrdemForm />} />
+      <Route path="/orcamentos"              element={<Orcamento />} />
+      <Route path="/orcamentos/novo"         element={<OrcamentoForm />} />
+      <Route path="/orcamentos/editar/:id"   element={<OrcamentoForm />} />
+      <Route path="/caixa"                   element={<Caixa />} />
+      <Route path="/caixa/novo"              element={<CaixaForm />} />
+      <Route path="/caixa/editar/:id"        element={<CaixaForm />} />
+      <Route path="/pagamentos"                   element={<Pagamentos />} />
+      <Route path="/pagamentos/novo"              element={<PagamentosForm />} />
+      <Route path="/pagamentos/editar/:id"        element={<PagamentosForm />} />
     </Routes>
   </BrowserRouter>,
 );

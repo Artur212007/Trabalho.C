@@ -33,7 +33,7 @@ const navGroups = [
   {
     title: "Serviços",
     items: [
-      { to: "/ordens", icon: <IconOrdens />, label: "Ordens de Serviço" },
+      { to: "/Ordem", icon: <IconOrdens />, label: "Ordens de Serviço" },
     ],
   },
   {
