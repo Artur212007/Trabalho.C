@@ -19,20 +19,10 @@ interface CaixaFormData {
   id_funcionario: number;
 }
 
-const IconArrowLeft = () => (
-  <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-    <line x1="19" y1="12" x2="5" y2="12"/>
-    <polyline points="12 19 5 12 12 5"/>
-  </svg>
-);
 
-const IconSave = () => (
-  <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-    <polyline points="17 21 17 13 7 13 7 21"/>
-    <polyline points="7 3 7 8 15 8"/>
-  </svg>
-);
+const IconArrowLeft = () => <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>;
+
+const IconSave = () => <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>;
 
 async function fetchWithAuth(url: string, options: RequestInit = {}) {
   const token = localStorage.getItem("token");
@@ -59,6 +49,13 @@ function useToast() {
   return { toast, show };
 }
 
+function formatPreco(value: string): { display: string; numeric: number } {
+  const digits = value.replace(/\D/g, "");
+  const numeric = Number(digits) / 100;
+  const display = numeric.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return { display, numeric };
+}
+
 export default function CaixaForm() {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -68,6 +65,8 @@ export default function CaixaForm() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const { toast, show: showToast } = useToast();
+  const [valorAberturaDisplay, setValorAberturaDisplay] = useState("");
+  const [valorFechamentoDisplay, setValorFechamentoDisplay] = useState("");
   
   const [formData, setFormData] = useState<CaixaFormData>({
     data: new Date().toISOString().split('T')[0],
@@ -112,6 +111,10 @@ export default function CaixaForm() {
           saldo: data.saldo,
           id_funcionario: data.id_funcionario
         });
+        setValorAberturaDisplay(data.valor_abertura.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+        if (data.valor_fechamento) {
+          setValorFechamentoDisplay(data.valor_fechamento.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+        }
       } catch (err) {
         console.error(err);
         showToast('Erro ao carregar registro de caixa', 'err');
@@ -127,7 +130,15 @@ export default function CaixaForm() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
-    if (name === 'valor_abertura' || name === 'valor_fechamento' || name === 'saldo') {
+    if (name === 'valor_abertura') {
+      const { display, numeric } = formatPreco(value);
+      setValorAberturaDisplay(display);
+      setFormData(prev => ({ ...prev, valor_abertura: numeric }));
+    } else if (name === 'valor_fechamento') {
+      const { display, numeric } = formatPreco(value);
+      setValorFechamentoDisplay(display);
+      setFormData(prev => ({ ...prev, valor_fechamento: numeric }));
+    } else if (name === 'saldo') {
       const numValue = value === '' ? 0 : parseFloat(value);
       setFormData(prev => ({ ...prev, [name]: isNaN(numValue) ? 0 : numValue }));
     } else if (name === 'id_funcionario') {
@@ -211,9 +222,9 @@ export default function CaixaForm() {
 
   if (loading) {
     return (
-      <div className="fornecedores-wrapper">
+      <div className="pf-wrapper">
         <Sidebar />
-        <div className="fornecedores-page">
+        <div className="pf-page">
           <div className="empty-state">
             <div className="big-icon">⏳</div>
             <p>Carregando registro...</p>
@@ -224,26 +235,32 @@ export default function CaixaForm() {
   }
 
   return (
-    <div className="fornecedores-wrapper">
+    <div className="pf-wrapper">
       <Sidebar />
-      <div className="fornecedores-page">
-        <header className="p-topbar">
-          <div className="p-topbar-title">
-            Fluxo de Caixa <span>{isEditing ? 'Editar Registro' : 'Novo Registro'}</span>
+      <div className="pf-page">
+        <header className="pf-header">
+          <div className="pf-title-block">
+            <h1>Fluxo de Caixa</h1>
+            <p>{isEditing ? 'Editar Registro' : 'Novo Registro'}</p>
           </div>
-          <div className="p-topbar-actions">
-            <button className="btn btn-ghost" onClick={() => navigate('/caixa')}>
-              <IconArrowLeft /> Voltar
-            </button>
-          </div>
+          <button className="pf-back" onClick={() => navigate('/caixa')}>
+            <IconArrowLeft /> Voltar
+          </button>
         </header>
 
-        <div className="p-content">
-          <div className="form-card">
+        <div className="pf-content">
+          <div className="pf-card">
+            <div className="pf-card-header">
+              <div className="pf-card-icon">💰</div>
+              <div>
+                <h2>Fluxo de Caixa</h2>
+                <p>{isEditing ? 'Editar Registro' : 'Novo Registro'}</p>
+              </div>
+            </div>
             <form onSubmit={handleSubmit}>
-              <div className="form-grid">
+              <div className="pf-grid">
                 {/* Data */}
-                <div className="form-group">
+                <div className="pf-field">
                   <label htmlFor="data">Data *</label>
                   <input
                     type="date"
@@ -251,12 +268,13 @@ export default function CaixaForm() {
                     name="data"
                     value={formData.data}
                     onChange={handleChange}
+                    max="2026-04-11"
                     required
                   />
                 </div>
 
                 {/* Responsável (Técnico) */}
-                <div className="form-group">
+                <div className="pf-field">
                   <label htmlFor="id_funcionario">Responsável (Técnico) *</label>
                   <select
                     id="id_funcionario"
@@ -278,39 +296,38 @@ export default function CaixaForm() {
                 </div>
 
                 {/* Valor Abertura */}
-                <div className="form-group">
+                <div className="pf-field">
                   <label htmlFor="valor_abertura">Valor de Abertura (R$) *</label>
                   <input
-                    type="number"
+                    type="text"
                     id="valor_abertura"
                     name="valor_abertura"
-                    value={formData.valor_abertura}
+                    maxLength={12}
+                    value={valorAberturaDisplay}
                     onChange={handleChange}
-                    step="0.01"
-                    min="0"
+                    placeholder="0,00"
                     required
                   />
                 </div>
 
                 {/* Valor Fechamento - só mostra se for edição */}
                 {isEditing && (
-                  <div className="form-group">
+                  <div className="pf-field">
                     <label htmlFor="valor_fechamento">Valor de Fechamento (R$)</label>
                     <input
-                      type="number"
+                      type="text"
                       id="valor_fechamento"
                       name="valor_fechamento"
-                      value={formData.valor_fechamento ?? ''}
+                      maxLength={12}
+                      value={valorFechamentoDisplay}
                       onChange={handleChange}
-                      step="0.01"
-                      min="0"
-                      placeholder="Digite o valor de fechamento"
+                      placeholder="0,00"
                     />
                   </div>
                 )}
 
                 {/* Saldo */}
-                <div className="form-group">
+                <div className="pf-field">
                   <label htmlFor="saldo">Saldo (R$) *</label>
                   <input
                     type="number"
@@ -324,22 +341,25 @@ export default function CaixaForm() {
                 </div>
               </div>
 
-              <div className="form-actions">
-                <button type="button" className="btn btn-ghost" onClick={() => navigate('/caixa')}>
-                  Cancelar
-                </button>
-                <button type="submit" className="btn btn-primary" disabled={saving}>
-                  <IconSave /> {saving ? 'Salvando...' : (isEditing ? 'Atualizar' : 'Salvar')}
-                </button>
+              <div className="pf-footer">
+                <div></div>
+                <div className="pf-footer-right">
+                  <button type="button" className="btn btn-ghost" onClick={() => navigate('/caixa')}>
+                    Cancelar
+                  </button>
+                  <button type="submit" className="btn btn-primary" disabled={saving}>
+                    <IconSave /> {saving ? 'Salvando...' : (isEditing ? 'Atualizar' : 'Salvar')}
+                  </button>
+                </div>
               </div>
             </form>
           </div>
         </div>
-      </div>
 
-      <div className={`toast${toast.visible ? " show" : ""}`}>
-        <span className={`toast-dot ${toast.type}`} />
-        <span>{toast.msg}</span>
+        <div className={`toast${toast.visible ? " show" : ""}`}>
+          <span className={`toast-dot ${toast.type}`} />
+          <span>{toast.msg}</span>
+        </div>
       </div>
     </div>
   );

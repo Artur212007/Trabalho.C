@@ -139,6 +139,42 @@ input::placeholder {
     font-size: 14px;
 }
 
+/* ── Password input wrapper ── */
+.password-input-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.password-input-wrapper input {
+    width: 100%;
+    padding-right: 40px;
+}
+
+.toggle-senha {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 4px 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+    transition: color 0.2s;
+}
+
+.toggle-senha:hover {
+    color: #1A1A1A;
+}
+
+.toggle-senha svg {
+    width: 18px;
+    height: 18px;
+}
+
 /* ── Botão ── */
 .button {
     width: 100%;

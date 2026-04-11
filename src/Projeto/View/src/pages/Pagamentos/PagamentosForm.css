@@ -270,15 +270,15 @@
 }
 
 .toast-dot.ok {
-  background: #10b981;
+  background: #16A34A;
 }
 
 .toast-dot.err {
-  background: #ef4444;
+  background: #FF4500;
 }
 
 .toast-dot.del {
-  background: #f59e0b;
+  background: #DC2626;
 }
 
 /* Responsive */

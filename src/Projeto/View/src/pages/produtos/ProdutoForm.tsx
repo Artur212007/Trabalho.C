@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Sidebar } from "../../components/sidebar/";
+import { IconBox, IconClock, IconArrowLeft } from "../../components/icons";
 import "./ProdutoForm.css";
 
 const API = "http://localhost:3001/api";
@@ -26,26 +27,9 @@ const EMPTY: FormData = {
 // ============================================
 // ÍCONES SVG
 // ============================================
-const IconArrow = () => (
-  <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-    <line x1="19" y1="12" x2="5" y2="12" />
-    <polyline points="12 19 5 12 12 5" />
-  </svg>
-);
+const IconCheck = () => <span style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>✅</span>;
 
-const IconCheck = () => (
-  <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-    <polyline points="20 6 9 17 4 12" />
-  </svg>
-);
-
-const IconTrash = () => (
-  <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-    <polyline points="3 6 5 6 21 6" />
-    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-    <path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" />
-  </svg>
-);
+const IconTrash = () => <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /></svg>;
 // ============================================
 
 // Função auxiliar para pegar token
@@ -195,8 +179,8 @@ export default function ProdutoForm() {
       <div className="pf-page">
         <div className="pf-header">
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-            <button className="pf-back" onClick={() => navigate("/produtos")}>
-              <IconArrow /> <span>Voltar</span>
+            <button className="btn btn-ghost" onClick={() => navigate("/produtos")}>
+              <IconArrowLeft /> Voltar
             </button>
             <div className="pf-title-block">
               <h1>{isEdit ? "Editar Produto" : "Novo Produto"}</h1>
@@ -214,7 +198,7 @@ export default function ProdutoForm() {
 
         <div className="pf-card">
           <div className="pf-card-header">
-            <div className="pf-card-icon">📦</div>
+            <div className="pf-card-icon"><IconBox /></div>
             <div>
               <h2>{isEdit ? "Editar Produto" : "Cadastro de Produto"}</h2>
               <p>{isEdit ? `Editando produto #${id}` : "Preencha todos os campos obrigatórios"}</p>
@@ -222,14 +206,14 @@ export default function ProdutoForm() {
           </div>
 
           {loading ? (
-            <div className="pf-loading">⏳ Carregando dados do produto...</div>
+            <div className="pf-loading"><IconClock /> Carregando dados do produto...</div>
           ) : (
             <div className="pf-form">
               <div className="pf-section-title">Identificação</div>
               <div className="pf-grid">
                 <div className="pf-field pf-full">
                   <label>Nome do Produto *</label>
-                  <input value={form.nome} onChange={e => set("nome", e.target.value)} placeholder="Ex: Furadeira de Impacto 750W" />
+                  <input maxLength={100} value={form.nome} onChange={e => set("nome", e.target.value)} placeholder="Ex: Furadeira de Impacto 750W" />
                 </div>
                 <div className="pf-field">
                   <label>Tipo</label>
@@ -241,7 +225,7 @@ export default function ProdutoForm() {
                 </div>
                 <div className="pf-field">
                   <label>Garantia (meses)</label>
-                  <input type="number" min={0} value={form.garantia || ""} onChange={e => set("garantia", Number(e.target.value))} placeholder="12" />
+                  <input type="number" min={0} step={1} value={form.garantia || ""} onChange={e => set("garantia", Number(e.target.value))} placeholder="12" />
                 </div>
               </div>
 
@@ -251,6 +235,7 @@ export default function ProdutoForm() {
                   <label>Preço de Custo (R$) *</label>
                   <input
                     type="text"
+                    maxLength={12}
                     value={precoCustoDisplay}
                     onChange={e => { const { display, numeric } = formatPreco(e.target.value); setPrecoCustoDisplay(display); set("preco_custo", numeric); }}
                     placeholder="0,00"
@@ -260,6 +245,7 @@ export default function ProdutoForm() {
                   <label>Preço de Venda (R$) *</label>
                   <input
                     type="text"
+                    maxLength={12}
                     value={precoVendaDisplay}
                     onChange={e => { const { display, numeric } = formatPreco(e.target.value); setPrecoVendaDisplay(display); set("preco_venda", numeric); }}
                     placeholder="0,00"
@@ -271,11 +257,11 @@ export default function ProdutoForm() {
               <div className="pf-grid cols-3">
                 <div className="pf-field">
                   <label>Quantidade em Estoque</label>
-                  <input type="number" min={0} value={form.quantidade_estoque || ""} onChange={e => set("quantidade_estoque", Number(e.target.value))} placeholder="0" />
+                  <input type="number" min={0} step={1} value={form.quantidade_estoque || ""} onChange={e => set("quantidade_estoque", Number(e.target.value))} placeholder="0" />
                 </div>
                 <div className="pf-field">
                   <label>Estoque Mínimo</label>
-                  <input type="number" min={0} value={form.estoque_minimo || ""} onChange={e => set("estoque_minimo", Number(e.target.value))} placeholder="5" />
+                  <input type="number" min={0} step={1} value={form.estoque_minimo || ""} onChange={e => set("estoque_minimo", Number(e.target.value))} placeholder="5" />
                 </div>
                 <div className="pf-field">
                   <label>ID do Fornecedor *</label>

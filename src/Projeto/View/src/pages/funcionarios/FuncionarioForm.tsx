@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Sidebar } from "../../components/sidebar/";
+import { IconArrowLeft } from "../../components/icons";
 import "./FuncionarioForm.css";
 
 const API = "http://localhost:3001/api"; // ✅ Adicionado /api
@@ -32,17 +33,7 @@ const CARGOS = [
   { id: 5, label: "CAIXA" },
 ];
 
-const IconArrow = () => (
-  <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-    <line x1="19" y1="12" x2="5" y2="12" />
-    <polyline points="12 19 5 12 12 5" />
-  </svg>
-);
-const IconCheck = () => (
-  <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-    <polyline points="20 6 9 17 4 12" />
-  </svg>
-);
+const IconCheck = () => <span style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>✅</span>;
 const IconTrash = () => (
   <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
     <polyline points="3 6 5 6 21 6" />
@@ -212,8 +203,8 @@ export default function FuncionarioForm() {
       <div className="pf-page">
         <div className="pf-header">
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-            <button className="pf-back" onClick={() => navigate("/funcionarios")}>
-              <IconArrow /> <span>Voltar</span>
+            <button className="btn btn-ghost" onClick={() => navigate("/funcionarios")}>
+              <IconArrowLeft /> Voltar
             </button>
             <div className="pf-title-block">
               <h1>{isEdit ? "Editar Funcionário" : "Novo Funcionário"}</h1>
@@ -246,7 +237,7 @@ export default function FuncionarioForm() {
               <div className="pf-grid">
                 <div className="pf-field pf-full">
                   <label>Nome *</label>
-                  <input value={form.nome} onChange={e => setField("nome", e.target.value)} placeholder="Ex: Carlos Eduardo" />
+                  <input maxLength={100} value={form.nome} onChange={e => setField("nome", e.target.value)} placeholder="Ex: Carlos Eduardo" />
                 </div>
                 <div className="pf-field">
                   <label>Cargo *</label>
@@ -258,7 +249,8 @@ export default function FuncionarioForm() {
                 <div className="pf-field">
                   <label>Salário *</label>
                   <input 
-                    type="text" 
+                    type="text"
+                    maxLength={12}
                     value={form.salario} 
                     onChange={e => setField("salario", e.target.value)} 
                     placeholder="Ex: 4500.00" 
@@ -267,7 +259,8 @@ export default function FuncionarioForm() {
                 <div className="pf-field">
                   <label>% Comissão</label>
                   <input 
-                    type="text" 
+                    type="text"
+                    maxLength={7}
                     value={form.percentual_comissao} 
                     onChange={e => setField("percentual_comissao", e.target.value)} 
                     placeholder="Ex: 5.00" 
@@ -287,7 +280,8 @@ export default function FuncionarioForm() {
                 <div className="pf-field">
                   <label>Usuário {!isEdit && "*"}</label>
                   <input 
-                    type="text" 
+                    type="text"
+                    maxLength={50}
                     value={form.usuario} 
                     onChange={e => setField("usuario", e.target.value)} 
                     placeholder="Nome de usuário para login"
@@ -297,7 +291,8 @@ export default function FuncionarioForm() {
                 <div className="pf-field">
                   <label>Senha {!isEdit && "*"}</label>
                   <input 
-                    type="password" 
+                    type="password"
+                    maxLength={50}
                     value={form.senha} 
                     onChange={e => setField("senha", e.target.value)} 
                     placeholder={isEdit ? "Deixe em branco para não alterar" : "Senha de acesso"}

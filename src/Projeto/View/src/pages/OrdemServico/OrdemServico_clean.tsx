@@ -1,21 +1,18 @@
-import { useState, useMemo, useEffect } from "react";
+﻿import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sidebar } from "../../components/sidebar";
-import { IconClipboard, IconAlertCircle, IconClock, IconDollarSign } from "../../components/icons";
-import "./Orcamento.css";
+import "./OrdemServico.css";
 
 const API = "http://localhost:3001/api";
 
-interface Orcamento {
+interface OrdemServico {
   id: number;
   cliente: string;
   tecnico: string;
   descricao: string;
-  dados: string;
-  valor: number;
+  estado: string;
   status: number;
   data: string;
-  validade: string;
 }
 
 const IconPlus   = () => <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
@@ -24,7 +21,7 @@ const IconTrash  = () => <svg width="13" height="13" fill="none" stroke="current
 const IconSearch = () => <span style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>🔍</span>;
 const IconDown   = () => <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>;
 
-// Função auxiliar para fetch com token
+// FunÃ§Ã£o auxiliar para fetch com token
 async function fetchWithAuth(url: string, options: RequestInit = {}) {
   const token = localStorage.getItem("token");
   return fetch(url, {
@@ -46,95 +43,85 @@ function useToast() {
   return { toast, show };
 }
 
-function fmt(v: number) {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL'
-  }).format(v);
-}
-
-export default function Orcamentos() {
+export default function OrdemServico() {
   const navigate = useNavigate();
-  const [orcamentos, setOrcamentos] = useState<Orcamento[]>([]);
+  const [ordens, setOrdens] = useState<OrdemServico[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [confirmId, setConfirmId] = useState<number | null>(null);
   const [deleting, setDeleting] = useState(false);
   const { toast, show: showToast } = useToast();
 
-  async function fetchOrcamentos() {
+  async function fetchOrdens() {
     try {
       setLoading(true);
-      const res = await fetchWithAuth(`${API}/orcamentos`);
+      const res = await fetchWithAuth(`${API}/OrdemServico`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      setOrcamentos(data.map((o: any) => ({
-        id: o.id_orcamento,
+      setOrdens(data.map((o: any) => ({
+        id: o.id_ordem_servico,
         cliente: o.nome_cliente || "Sem cliente",
-        tecnico: o.nome_tecnico || "Sem técnico",
-        descricao: o.descricao || "",
-        dados: o.dados || "",
-        valor: o.valor_total || 0,
+        tecnico: o.nome_tecnico || "Sem tÃ©cnico",
+        descricao: o.descricao_problema || "",
+        estado: o.estado_equipamento || "",
         status: o.status ?? 0,
-        data: o.data || "",
-        validade: o.validade || ""
+        data: o.data_abertura || ""
       })));
     } catch (err) {
       console.error(err);
       if (err instanceof Error) {
-        showToast(`Erro ao carregar orçamentos: ${err.message}`, "err");
+        showToast(`Erro ao carregar ordens: ${err.message}`, "err");
       } else {
-        showToast("Erro ao carregar orçamentos. Verifique o backend.", "err");
+        showToast("Erro ao carregar ordens. Verifique o backend.", "err");
       }
     } finally {
       setLoading(false);
     }
   }
 
-  useEffect(() => { fetchOrcamentos(); }, []);
+  useEffect(() => { fetchOrdens(); }, []);
 
   const stats = useMemo(() => ({
-    total: orcamentos.length,
-    aprovados: orcamentos.filter(o => o.status === 1).length,
-    pendentes: orcamentos.filter(o => o.status === 0).length,
-    valorTotal: orcamentos.reduce((s, o) => s + o.valor, 0),
-  }), [orcamentos]);
+    total: ordens.length,
+    concluidas: ordens.filter(o => o.status === 1).length,
+    abertas: ordens.filter(o => o.status === 0).length,
+  }), [ordens]);
 
   const lista = useMemo(() =>
-    orcamentos.filter(o => {
+    ordens.filter(o => {
       const q = search.toLowerCase();
       return (
         o.cliente.toLowerCase().includes(q) ||
         o.tecnico.toLowerCase().includes(q) ||
         o.descricao.toLowerCase().includes(q) ||
-        o.dados.toLowerCase().includes(q) ||
+        o.estado.toLowerCase().includes(q) ||
         String(o.id).includes(q)
       );
-    }), [orcamentos, search]);
+    }), [ordens, search]);
 
   async function handleDelete() {
     if (!confirmId) return;
-    
+
     setDeleting(true);
     try {
-      const res = await fetchWithAuth(`${API}/orcamentos/${confirmId}`, { 
-        method: "DELETE" 
+      const res = await fetchWithAuth(`${API}/OrdemServico/${confirmId}`, {
+        method: "DELETE"
       });
-      
+
       if (!res.ok) {
         const error = await res.text();
         throw new Error(error);
       }
-      
-      showToast("Orçamento removido com sucesso!", "del");
-      await fetchOrcamentos();
+
+      showToast("Ordem de serviÃ§o removida com sucesso!", "del");
+      await fetchOrdens();
       setConfirmId(null);
     } catch (err) {
       console.error(err);
       if (err instanceof Error) {
-        showToast(err.message || "Erro ao remover orçamento.", "err");
+        showToast(err.message || "Erro ao remover ordem de serviÃ§o.", "err");
       } else {
-        showToast("Erro ao remover orçamento.", "err");
+        showToast("Erro ao remover ordem de serviÃ§o.", "err");
       }
     } finally {
       setDeleting(false);
@@ -142,22 +129,20 @@ export default function Orcamentos() {
   }
 
   function exportCSV() {
-    const headers = ["ID", "Cliente", "Técnico", "Descrição", "Dados", "Valor", "Status", "Data", "Validade"];
-    const rows = orcamentos.map(o => [
+    const headers = ["ID", "Cliente", "TÃ©cnico", "Problema", "Estado", "Status", "Data"];
+    const rows = ordens.map(o => [
       o.id,
       o.cliente,
       o.tecnico,
       o.descricao,
-      o.dados,
-      o.valor,
-      o.status === 1 ? "Aprovado" : "Pendente",
-      o.data ? new Date(o.data).toLocaleDateString("pt-BR") : "-",
-      o.validade ? new Date(o.validade).toLocaleDateString("pt-BR") : "-"
+      o.estado,
+      o.status === 1 ? "ConcluÃ­da" : "Aberta",
+      o.data ? new Date(o.data).toLocaleDateString("pt-BR") : "-"
     ]);
     const csv = [headers, ...rows].map(r => r.join(";")).join("\n");
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
-    a.download = "orcamentos.csv";
+    a.download = "ordens_servico.csv";
     a.click();
     showToast("CSV exportado!", "ok");
   }
@@ -167,53 +152,53 @@ export default function Orcamentos() {
     setDeleting(false);
   };
 
-  const confirmOrcamento = orcamentos.find(o => o.id === confirmId);
+  const confirmOrdem = ordens.find(o => o.id === confirmId);
 
   return (
-    <div className="orcamentos-wrapper">
+    <div className="ordem-servico-wrapper">
       <Sidebar />
-      <div className="orcamentos-page">
+      <div className="ordem-servico-page">
         <header className="p-topbar">
-          <div className="p-topbar-title">Orçamentos <span>Gestão</span></div>
+          <div className="p-topbar-title">Ordens de ServiÃ§o <span>GestÃ£o</span></div>
           <div className="p-topbar-actions">
             <button className="btn btn-ghost" onClick={exportCSV}><IconDown /> Exportar</button>
-            <button className="btn btn-primary" onClick={() => navigate("/orcamentos/novo")}>
-              <IconPlus /> Novo Orçamento
+            <button className="btn btn-primary" onClick={() => navigate("/ordem-servico/novo")}>
+              <IconPlus /> Nova OS
             </button>
           </div>
         </header>
 
         <div className="p-content">
           <div className="stats-row">
-            <div className="stat-card"><div className="stat-icon si-yellow"><IconClipboard /></div><div className="stat-info"><p>Total de Orçamentos</p><strong>{stats.total}</strong></div></div>
-            <div className="stat-card"><div className="stat-icon si-green"><IconAlertCircle /></div><div className="stat-info"><p>Aprovados</p><strong>{stats.aprovados}</strong></div></div>
-            <div className="stat-card"><div className="stat-icon si-red"><IconClock /></div><div className="stat-info"><p>Pendentes</p><strong>{stats.pendentes}</strong></div></div>
-            <div className="stat-card"><div className="stat-icon si-blue"><IconDollarSign /></div><div className="stat-info"><p>Valor Total</p><strong>{fmt(stats.valorTotal)}</strong></div></div>
+            <div className="stat-card"><div className="stat-icon si-yellow">ðŸ”§</div><div className="stat-info"><p>Total de OS</p><strong>{stats.total}</strong></div></div>
+            <div className="stat-card"><div className="stat-icon si-green">âœ…</div><div className="stat-info"><p>ConcluÃ­das</p><strong>{stats.concluidas}</strong></div></div>
+            <div className="stat-card"><div className="stat-icon si-red">â³</div><div className="stat-info"><p>Abertas</p><strong>{stats.abertas}</strong></div></div>
+            <div className="stat-card"><div className="stat-icon si-blue">ðŸ“Š</div><div className="stat-info"><p>Taxa de ConclusÃ£o</p><strong>{stats.total > 0 ? Math.round((stats.concluidas / stats.total) * 100) : 0}%</strong></div></div>
           </div>
 
           <div className="table-card">
             <div className="table-header">
-              <h3>Cadastro de Orçamentos</h3>
+              <h3>Cadastro de Ordens de ServiÃ§o</h3>
               <div className="table-header-right">
                 <div className="search-bar">
                   <IconSearch />
-                  <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar orçamento..." />
+                  <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar ordem de serviÃ§o..." />
                 </div>
               </div>
             </div>
 
             {loading ? (
-              <div className="empty-state"><div className="big-icon"><IconClock /></div><p>Carregando orçamentos...</p></div>
+              <div className="empty-state"><div className="big-icon">â³</div><p>Carregando ordens de serviÃ§o...</p></div>
             ) : lista.length === 0 ? (
               <div className="empty-state">
-                <div className="big-icon"><IconClipboard /></div>
-                <p>Nenhum orçamento encontrado.<br />Clique em <strong>Novo Orçamento</strong> para cadastrar.</p>
+                <div className="big-icon">ðŸ”§</div>
+                <p>Nenhuma ordem de serviÃ§o encontrada.<br />Clique em <strong>Nova OS</strong> para cadastrar.</p>
               </div>
             ) : (
               <table>
                 <thead>
                   <tr>
-                    <th>ID</th><th>Cliente</th><th>Técnico</th><th>Descrição</th><th>Valor</th><th>Status</th><th>Ações</th>
+                    <th>ID</th><th>Cliente</th><th>TÃ©cnico</th><th>Problema</th><th>Estado</th><th>Status</th><th>AÃ§Ãµes</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -222,21 +207,21 @@ export default function Orcamentos() {
                       <td className="td-id">#{o.id}</td>
                       <td className="td-nome">{o.cliente}</td>
                       <td>{o.tecnico}</td>
-                      <td className="td-dim">{o.descricao || "—"}</td>
-                      <td><strong>{fmt(o.valor)}</strong></td>
-                      <td><span className={`badge ${o.status === 1 ? 'badge-ok' : 'badge-warn'}`}>{o.status === 1 ? "Aprovado" : "Pendente"}</span></td>
+                      <td className="td-dim">{o.descricao || "â€”"}</td>
+                      <td>{o.estado || "â€”"}</td>
+                      <td><span className={`badge ${o.status === 1 ? 'badge-ok' : 'badge-warn'}`}>{o.status === 1 ? "ConcluÃ­da" : "Aberta"}</span></td>
                       <td>
                         <div className="row-actions">
-                          <button 
-                            className="icon-btn edit" 
-                            title="Editar" 
-                            onClick={() => navigate(`/orcamentos/editar/${o.id}`)}
+                          <button
+                            className="icon-btn edit"
+                            title="Editar"
+                            onClick={() => navigate(`/ordem-servico/editar/${o.id}`)}
                           >
                             <IconEdit />
                           </button>
-                          <button 
-                            className="icon-btn del" 
-                            title="Excluir" 
+                          <button
+                            className="icon-btn del"
+                            title="Excluir"
                             onClick={() => setConfirmId(o.id)}
                           >
                             <IconTrash />
@@ -252,21 +237,21 @@ export default function Orcamentos() {
         </div>
       </div>
 
-      <div 
-        className={`modal-overlay${confirmId !== null ? " open" : ""}`} 
+      <div
+        className={`modal-overlay${confirmId !== null ? " open" : ""}`}
         onClick={handleCloseModal}
       >
         <div className="confirm-modal" onClick={e => e.stopPropagation()}>
-          <div className="danger-icon">🗑️</div>
-          <h3>Remover este orçamento?</h3>
-          <p>"{confirmOrcamento?.cliente || 'Orçamento'}" será removido permanentemente.</p>
+          <div className="danger-icon">ðŸ—‘ï¸</div>
+          <h3>Remover esta ordem de serviÃ§o?</h3>
+          <p>"{confirmOrdem?.cliente || 'Ordem de serviÃ§o'}" serÃ¡ removida permanentemente.</p>
           <div className="confirm-actions">
             <button className="btn btn-ghost" onClick={handleCloseModal}>
               Cancelar
             </button>
-            <button 
-              className="btn btn-danger" 
-              onClick={handleDelete} 
+            <button
+              className="btn btn-danger"
+              onClick={handleDelete}
               disabled={deleting}
             >
               {deleting ? "Removendo..." : "Sim, remover"}
@@ -282,3 +267,14 @@ export default function Orcamentos() {
     </div>
   );
 }
+
+      setLista(data.map((o: any) => ({
+        id: o.id_ordem_servico,
+        cliente: o.nome_cliente || "Sem cliente",
+        tecnico: o.nome_tecnico || "Sem tÃ©cnico",
+        descricao: o.descricao_problema || "",
+        status: o.status ?? 0,
+        data: o.data_abertura || ""
+      })));
+
+    } catch (err) {

@@ -2,9 +2,9 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
-.funcionarios-wrapper { display: flex; width: 100%; height: 100vh; overflow: hidden; }
+.orcamentos-wrapper { display: flex; width: 100%; height: 100vh; overflow: hidden; }
 
-.funcionarios-page {
+.orcamentos-page {
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -266,6 +266,7 @@ tbody td { padding: 14px 24px; font-size: 13px; }
 .toast-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .toast-dot.ok  { background: #16A34A; }
 .toast-dot.err { background: #FF4500; }
+.toast-dot.del { background: #DC2626; }
 
 /* ── Scrollbar ── */
 .p-content::-webkit-scrollbar { width: 6px; }

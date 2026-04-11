@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Sidebar } from "../../components/sidebar";
+import { IconClock, IconAlertCircle, IconBox, IconArrowLeft } from "../../components/icons";
 import "./VendasForm.css";
 
 const API = "http://localhost:3001/api";
@@ -32,33 +33,11 @@ interface ItemVenda {
   subtotal: number;
 }
 
-const IconArrow = () => (
-  <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-    <line x1="19" y1="12" x2="5" y2="12" />
-    <polyline points="12 19 5 12 12 5" />
-  </svg>
-);
+const IconCheck = () => <span style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>✅</span>;
 
-const IconCheck = () => (
-  <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-    <polyline points="20 6 9 17 4 12" />
-  </svg>
-);
+const IconPlus = () => <span style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>➕</span>;
 
-const IconPlus = () => (
-  <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-    <line x1="12" y1="5" x2="12" y2="19" />
-    <line x1="5" y1="12" x2="19" y2="12" />
-  </svg>
-);
-
-const IconTrash = () => (
-  <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-    <polyline points="3 6 5 6 21 6" />
-    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-    <path d="M10 11v6" /><path d="M14 11v6" />
-  </svg>
-);
+const IconTrash = () => <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /></svg>;
 
 async function fetchWithAuth(url: string, options: RequestInit = {}) {
   const token = localStorage.getItem("token");
@@ -321,8 +300,8 @@ export default function VendasForm() {
       <div className="pf-page">
         <div className="pf-header">
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-            <button className="pf-back" onClick={() => navigate("/vendas")}>
-              <IconArrow /> <span>Voltar</span>
+            <button className="btn btn-ghost" onClick={() => navigate("/vendas")}>
+              <IconArrowLeft /> Voltar
             </button>
             <div className="pf-title-block">
               <h1>{isEdit ? "Editar Venda" : "Nova Venda"}</h1>
@@ -333,7 +312,7 @@ export default function VendasForm() {
 
         <div className="pf-card">
           <div className="pf-card-header">
-            <div className="pf-card-icon">🛒</div>
+            <div className="pf-card-icon"><IconBox /></div>
             <div>
               <h2>Registrar Venda</h2>
               <p>Selecione o vendedor, cliente e os produtos</p>
@@ -341,7 +320,7 @@ export default function VendasForm() {
           </div>
 
           {loading ? (
-            <div className="pf-loading">⏳ Carregando dados...</div>
+            <div className="pf-loading"><IconClock /> Carregando dados...</div>
           ) : (
             <div className="pf-form">
 
@@ -384,7 +363,7 @@ export default function VendasForm() {
                       fontSize: "13px",
                       color: "#1e40af"
                     }}>
-                      🧑‍💼 Vendedor: <strong>{vendedorSelecionado.nome}</strong>
+                      <IconAlertCircle /> Vendedor: <strong>{vendedorSelecionado.nome}</strong>
                     </div>
                   )}
                 </div>
@@ -424,7 +403,7 @@ export default function VendasForm() {
                       fontSize: "13px",
                       color: "#065f46"
                     }}>
-                      ✅ Cliente: <strong>{clienteSelecionado.nome}</strong>
+                      <IconAlertCircle /> Cliente: <strong>{clienteSelecionado.nome}</strong>
                       {clienteSelecionado.cpf_cnpj ? ` — ${clienteSelecionado.cpf_cnpj}` : ""}
                     </div>
                   )}

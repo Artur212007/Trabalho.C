@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Sidebar } from "../../components/sidebar/";
+import { IconArrowLeft } from "../../components/icons";
 import "./FornecedorForm.css";
 
 const API = "http://localhost:3001/api"; // ✅ Adicionado /api
@@ -14,17 +15,7 @@ interface FormData {
 
 const EMPTY: FormData = { nome: "", telefone: "", email: "", endereco: "" };
 
-const IconArrow = () => (
-  <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-    <line x1="19" y1="12" x2="5" y2="12" />
-    <polyline points="12 19 5 12 12 5" />
-  </svg>
-);
-const IconCheck = () => (
-  <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-    <polyline points="20 6 9 17 4 12" />
-  </svg>
-);
+const IconCheck = () => <span style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>✅</span>;
 const IconTrash = () => (
   <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
     <polyline points="3 6 5 6 21 6" />
@@ -189,8 +180,8 @@ export default function FornecedorForm() {
       <div className="pf-page">
         <div className="pf-header">
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-            <button className="pf-back" onClick={() => navigate("/fornecedores")}>
-              <IconArrow /> <span>Voltar</span>
+            <button className="btn btn-ghost" onClick={() => navigate("/fornecedores")}>
+              <IconArrowLeft /> Voltar
             </button>
             <div className="pf-title-block">
               <h1>{isEdit ? "Editar Fornecedor" : "Novo Fornecedor"}</h1>
@@ -223,19 +214,19 @@ export default function FornecedorForm() {
               <div className="pf-grid">
                 <div className="pf-field pf-full">
                   <label>Nome da Empresa *</label>
-                  <input value={form.nome} onChange={e => setField("nome", e.target.value)} placeholder="Ex: Ferramentas Alfa Ltda" />
+                  <input maxLength={100} value={form.nome} onChange={e => setField("nome", e.target.value)} placeholder="Ex: Ferramentas Alfa Ltda" />
                 </div>
                 <div className="pf-field">
                   <label>Telefone</label>
-                  <input value={form.telefone} onChange={e => setField("telefone", formatPhone(e.target.value))} placeholder="(00) 90000-0000" />
+                  <input maxLength={15} value={form.telefone} onChange={e => setField("telefone", formatPhone(e.target.value))} placeholder="(00) 90000-0000" />
                 </div>
                 <div className="pf-field">
                   <label>E-mail</label>
-                  <input type="email" value={form.email} onChange={e => setField("email", e.target.value)} placeholder="exemplo@email.com" />
+                  <input type="email" maxLength={100} value={form.email} onChange={e => setField("email", e.target.value)} placeholder="exemplo@email.com" />
                 </div>
                 <div className="pf-field pf-full">
                   <label>Endereço</label>
-                  <input value={form.endereco} onChange={e => setField("endereco", e.target.value)} placeholder="Ex: Rua das Indústrias, 100 - Fortaleza/CE" />
+                  <input maxLength={150} value={form.endereco} onChange={e => setField("endereco", e.target.value)} placeholder="Ex: Rua das Indústrias, 100 - Fortaleza/CE" />
                 </div>
               </div>
             </div>

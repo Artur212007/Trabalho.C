@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sidebar } from "../../components/sidebar";
+import { IconDollarSign, IconClock, IconClipboard, IconAlertCircle } from "../../components/icons";
 import "./Pagamentos.css";
 
 const API = "http://localhost:3001/api";
@@ -29,19 +30,9 @@ interface Parcela {
   status: string;
 }
 
-const IconPlus = () => (
-  <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-    <line x1="12" y1="5" x2="12" y2="19"/>
-    <line x1="5" y1="12" x2="19" y2="12"/>
-  </svg>
-);
+const IconPlus = () => <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
 
-const IconEdit = () => (
-  <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-  </svg>
-);
+const IconEdit = () => <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>;
 
 const IconTrash = () => (
   <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -53,27 +44,11 @@ const IconTrash = () => (
   </svg>
 );
 
-const IconSearch = () => (
-  <svg width="14" height="14" fill="none" stroke="#71797E" strokeWidth="2" viewBox="0 0 24 24">
-    <circle cx="11" cy="11" r="8"/>
-    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-  </svg>
-);
+const IconSearch = () => <span style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>🔍</span>;
 
-const IconDown = () => (
-  <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-    <polyline points="7 10 12 15 17 10"/>
-    <line x1="12" y1="15" x2="12" y2="3"/>
-  </svg>
-);
+const IconDown = () => <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>;
 
-const IconEye = () => (
-  <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-    <circle cx="12" cy="12" r="3"/>
-  </svg>
-);
+const IconEye = () => <span>👁️</span>;
 
 async function fetchWithAuth(url: string, options: RequestInit = {}) {
   const token = localStorage.getItem("token");
@@ -336,7 +311,7 @@ export default function Pagamentos() {
           {/* Stats Cards */}
           <div className="stats-row">
             <div className="stat-card">
-              <div className="stat-icon si-blue">💰</div>
+              <div className="stat-icon si-blue"><IconDollarSign /></div>
               <div className="stat-info">
                 <p>Total em Pagamentos</p>
                 <strong>{formatCurrency(stats.totalValor)}</strong>
@@ -344,7 +319,7 @@ export default function Pagamentos() {
               </div>
             </div>
             <div className="stat-card">
-              <div className="stat-icon si-yellow">⏳</div>
+              <div className="stat-icon si-yellow"><IconDollarSign /></div>
               <div className="stat-info">
                 <p>Pendentes</p>
                 <strong>{formatCurrency(stats.totalPendente)}</strong>
@@ -352,7 +327,7 @@ export default function Pagamentos() {
               </div>
             </div>
             <div className="stat-card">
-              <div className="stat-icon si-green">✅</div>
+              <div className="stat-icon si-green"><IconDollarSign /></div>
               <div className="stat-info">
                 <p>Recebidos</p>
                 <strong>{formatCurrency(stats.totalPago)}</strong>
@@ -360,7 +335,7 @@ export default function Pagamentos() {
               </div>
             </div>
             <div className="stat-card">
-              <div className="stat-icon si-red">⚠️</div>
+              <div className="stat-icon si-red"><IconDollarSign /></div>
               <div className="stat-info">
                 <p>Atrasados</p>
                 <strong>{formatCurrency(stats.totalAtrasado)}</strong>
@@ -401,12 +376,12 @@ export default function Pagamentos() {
 
             {loading ? (
               <div className="empty-state">
-                <div className="big-icon">⏳</div>
+                <div className="big-icon"><IconClock /></div>
                 <p>Carregando pagamentos...</p>
               </div>
             ) : lista.length === 0 ? (
               <div className="empty-state">
-                <div className="big-icon">💰</div>
+                <div className="big-icon"><IconDollarSign /></div>
                 <p>
                   Nenhum pagamento encontrado.<br />
                   Clique em <strong>Novo Pagamento</strong> para registrar um recebimento.
@@ -458,7 +433,7 @@ export default function Pagamentos() {
                               title="Baixar pagamento" 
                               onClick={() => handleBaixarPagamento(p.id_pagamento)}
                             >
-                              ✅
+                              <IconAlertCircle />
                             </button>
                           )}
                           <button 
@@ -492,7 +467,7 @@ export default function Pagamentos() {
         onClick={() => setViewParcelasId(null)}
       >
         <div className="parcelas-modal" onClick={e => e.stopPropagation()}>
-          <h3>📋 Parcelas do Pagamento #{viewParcelasId}</h3>
+          <h3><IconClipboard /> Parcelas do Pagamento #{viewParcelasId}</h3>
           {viewParcelasId && parcelas[viewParcelasId] && (
             <table className="parcelas-table">
               <thead>

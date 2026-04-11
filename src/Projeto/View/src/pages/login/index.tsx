@@ -2,7 +2,12 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
+import { IconAlertCircle } from "../../components/icons";
 import "./login.css";
+
+const IconEye = () => <span style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>👁️</span>;
+
+const IconEyeOff = () => <span style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>🚫</span>;
 
 async function autenticarComBackend(usuario: string, senha: string) {
   const response = await fetch("http://localhost:3001/api/login", {
@@ -25,6 +30,7 @@ async function autenticarComBackend(usuario: string, senha: string) {
 export function Login() {
   const [usuario, setUsuario] = useState("");
   const [senha, setSenha] = useState("");
+  const [mostraSenha, setMostraSenha] = useState(false);
   const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(false);
   const navigate = useNavigate();
@@ -82,19 +88,31 @@ export function Login() {
               placeholder="Usuário"
               value={usuario}
               onChange={(e) => setUsuario(e.target.value)}
+              maxLength={50}
               onKeyDown={(e) => e.key === "Enter" && handleLogin()}
             />
 
             <div className="label">
               <label>Senha</label>
             </div>
-            <Input
-              type="password"
-              placeholder="Digite sua senha"
-              value={senha}
-              onChange={(e) => setSenha(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-            />
+            <div className="password-input-wrapper">
+              <Input
+                type={mostraSenha ? "text" : "password"}
+                placeholder="Digite sua senha"
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
+                maxLength={50}
+                onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+              />
+              <button
+                type="button"
+                className="toggle-senha"
+                onClick={() => setMostraSenha(!mostraSenha)}
+                title={mostraSenha ? "Ocultar senha" : "Mostrar senha"}
+              >
+                {mostraSenha ? <IconEyeOff /> : <IconEye />}
+              </button>
+            </div>
 
             {erro && (
               <p style={{
@@ -102,9 +120,12 @@ export function Login() {
                 fontSize: "13px",
                 marginTop: "8px",
                 alignSelf: "flex-start",
-                width: "100%"
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px"
               }}>
-                ⚠️ {erro}
+                <IconAlertCircle /> {erro}
               </p>
             )}
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Sidebar } from "../../components/sidebar/";
+import { IconArrowLeft } from "../../components/icons";
 import "./ClienteForm.css";
 
 const API = "http://localhost:3001/api"; // ✅ Adicionado /api
@@ -19,24 +20,9 @@ const EMPTY: FormData = {
   nome: "", cpf_cnpj: "", telefone: "", email: "", endereco: "", usuario: "", senha: "",
 };
 
-const IconArrow = () => (
-  <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-    <line x1="19" y1="12" x2="5" y2="12" />
-    <polyline points="12 19 5 12 12 5" />
-  </svg>
-);
-const IconCheck = () => (
-  <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-    <polyline points="20 6 9 17 4 12" />
-  </svg>
-);
-const IconTrash = () => (
-  <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-    <polyline points="3 6 5 6 21 6" />
-    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-    <path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" />
-  </svg>
-);
+const IconArrow = () => <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></svg>;
+const IconCheck = () => <span style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>✅</span>;
+const IconTrash = () => <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" /></svg>;
 
 // ✅ Função auxiliar para fetch com token
 async function fetchWithAuth(url: string, options: RequestInit = {}) {
@@ -250,8 +236,8 @@ export default function ClienteForm() {
       <div className="pf-page">
         <div className="pf-header">
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-            <button className="pf-back" onClick={() => navigate("/clientes")}>
-              <IconArrow /> <span>Voltar</span>
+            <button className="btn btn-ghost" onClick={() => navigate("/clientes")}>
+              <IconArrowLeft /> Voltar
             </button>
             <div className="pf-title-block">
               <h1>{isEdit ? "Editar Cliente" : "Novo Cliente"}</h1>
@@ -284,19 +270,19 @@ export default function ClienteForm() {
               <div className="pf-grid">
                 <div className="pf-field pf-full">
                   <label>Nome Completo *</label>
-                  <input value={form.nome} onChange={e => set("nome", e.target.value)} placeholder="Ex: João da Silva" />
+                  <input maxLength={100} value={form.nome} onChange={e => set("nome", e.target.value)} placeholder="Ex: João da Silva" required />
                 </div>
                 <div className="pf-field">
                   <label>CPF / CNPJ</label>
-                  <input value={form.cpf_cnpj} onChange={e => set("cpf_cnpj", maskCPFCNPJ(e.target.value))} placeholder="000.000.000-00" />
+                  <input maxLength={18} value={form.cpf_cnpj} onChange={e => set("cpf_cnpj", maskCPFCNPJ(e.target.value))} placeholder="000.000.000-00" />
                 </div>
                 <div className="pf-field">
                   <label>Telefone</label>
-                  <input value={form.telefone} onChange={e => set("telefone", maskTel(e.target.value))} placeholder="(00) 90000-0000" />
+                  <input maxLength={15} value={form.telefone} onChange={e => set("telefone", maskTel(e.target.value))} placeholder="(00) 90000-0000" />
                 </div>
                 <div className="pf-field pf-full">
                   <label>E-mail</label>
-                  <input type="email" value={form.email} onChange={e => set("email", e.target.value)} placeholder="exemplo@email.com" />
+                  <input type="email" maxLength={100} value={form.email} onChange={e => set("email", e.target.value)} placeholder="exemplo@email.com" />
                 </div>
               </div>
 
@@ -304,7 +290,7 @@ export default function ClienteForm() {
               <div className="pf-grid">
                 <div className="pf-field pf-full">
                   <label>Endereço</label>
-                  <input value={form.endereco} onChange={e => set("endereco", e.target.value)} placeholder="Ex: Rua das Flores, 123 - São Paulo/SP" />
+                  <input maxLength={150} value={form.endereco} onChange={e => set("endereco", e.target.value)} placeholder="Ex: Rua das Flores, 123 - São Paulo/SP" />
                 </div>
               </div>
 
@@ -313,6 +299,7 @@ export default function ClienteForm() {
                 <div className="pf-field">
                   <label>Usuário {!isEdit && "*"}</label>
                   <input
+                    maxLength={50}
                     value={form.usuario}
                     onChange={e => set("usuario", e.target.value)}
                     placeholder="Nome de usuário para login"
@@ -323,6 +310,7 @@ export default function ClienteForm() {
                   <label>Senha {!isEdit && "*"}</label>
                   <input
                     type="password"
+                    maxLength={50}
                     value={form.senha}
                     onChange={e => set("senha", e.target.value)}
                     placeholder={isEdit ? "Deixe em branco para não alterar" : "Senha de acesso"}

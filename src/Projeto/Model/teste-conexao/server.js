@@ -47,25 +47,19 @@ app.post('/api/login', (req, res) => {
     return res.status(400).json({ error: 'Usuário e senha obrigatórios' });
   }
 
-  const sql = `
+  // Busca primeiro na tabela usuario, depois na tabela cliente (separado para evitar
+  // problema de ordem indefinida do UNION que causava senha incorreta)
+  const sqlUsuario = `
     SELECT id_usuario AS id, usuario, senha, nivel_acesso, ativo, 'usuario' AS tipo
     FROM usuario WHERE usuario = ? AND ativo = 1
+  `;
 
-    UNION
-
+  const sqlCliente = `
     SELECT id_cliente AS id, usuario, senha, nivel_acesso, ativo, 'cliente' AS tipo
     FROM cliente WHERE usuario = ? AND ativo = 1
   `;
 
-  db.query(sql, [usuario, usuario], async (err, results) => {
-    if (err) return res.status(500).json({ error: err.message });
-
-    if (results.length === 0) {
-      return res.status(401).json({ error: 'Usuário não encontrado' });
-    }
-
-    const user = results[0];
-
+  const realizarLogin = async (user, res) => {
     const senhaValida = await bcrypt.compare(senha, user.senha);
 
     if (!senhaValida) {
@@ -87,6 +81,25 @@ app.post('/api/login', (req, res) => {
         nivel_acesso: user.nivel_acesso,
         tipo: user.tipo
       }
+    });
+  };
+
+  db.query(sqlUsuario, [usuario], (err, resultsUsuario) => {
+    if (err) return res.status(500).json({ error: err.message });
+
+    if (resultsUsuario.length > 0) {
+      return realizarLogin(resultsUsuario[0], res);
+    }
+
+    // Não encontrou em 'usuario', tenta em 'cliente'
+    db.query(sqlCliente, [usuario], (err2, resultsCliente) => {
+      if (err2) return res.status(500).json({ error: err2.message });
+
+      if (resultsCliente.length === 0) {
+        return res.status(401).json({ error: 'Usuário não encontrado' });
+      }
+
+      return realizarLogin(resultsCliente[0], res);
     });
   });
 });

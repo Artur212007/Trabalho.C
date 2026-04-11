@@ -54,9 +54,9 @@ createRoot(root!).render(
       <Route path="/vendas/novo"             element={<VendasForm />} />
       <Route path="/vendas/editar/:id"       element={<VendasForm />} />
       <Route path="/vendas/:id"              element={<VendasDetalhes />} />
-      <Route path="/ordem"                   element={<Ordem />} />
-      <Route path="/ordem/novo"              element={<OrdemForm />} />
-      <Route path="/ordem/editar/:id"        element={<OrdemForm />} />
+      <Route path="/ordem-servico"           element={<Ordem />} />
+      <Route path="/ordem-servico/novo"      element={<OrdemForm />} />
+      <Route path="/ordem-servico/editar/:id" element={<OrdemForm />} />
       <Route path="/orcamentos"              element={<Orcamento />} />
       <Route path="/orcamentos/novo"         element={<OrcamentoForm />} />
       <Route path="/orcamentos/editar/:id"   element={<OrcamentoForm />} />

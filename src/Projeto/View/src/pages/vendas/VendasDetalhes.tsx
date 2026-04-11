@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Sidebar } from "../../components/sidebar";
-import "./vendas.css";
+import { IconArrowLeft, IconClock, IconUser, IconX, IconAlertCircle } from "../../components/icons";
+import "./VendasDetalhes.css";
 
 const API = "http://localhost:3001/api";
 
@@ -69,11 +70,34 @@ export default function VendasDetalhes() {
   }
 
   if (loading) {
-    return <p style={{ padding: 20 }}>Carregando...</p>;
+    return (
+      <div className="vendas-wrapper">
+        <Sidebar />
+        <div className="vendas-page">
+          <div className="empty-state">
+            <div className="big-icon"><IconClock /></div>
+            <p>Carregando detalhes da venda...</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (!venda) {
-    return <p style={{ padding: 20 }}>Venda não encontrada</p>;
+    return (
+      <div className="vendas-wrapper">
+        <Sidebar />
+        <div className="vendas-page">
+          <div className="empty-state">
+            <div className="big-icon"><IconX /></div>
+            <p>Venda não encontrada</p>
+            <button className="btn btn-primary" onClick={() => navigate("/vendas")}>
+              <IconArrowLeft /> Voltar para Vendas
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -83,33 +107,65 @@ export default function VendasDetalhes() {
       <div className="vendas-page">
         <header className="p-topbar">
           <div className="p-topbar-title">
-            Venda #{venda.id_venda}
+            Venda <span>#{venda.id_venda}</span>
           </div>
 
-          <button className="btn" onClick={() => navigate(-1)}>
-            ← Voltar
-          </button>
+          <div className="p-topbar-actions">
+            <button className="btn-back" onClick={() => navigate(-1)}>
+              <IconArrowLeft /> Voltar
+            </button>
+          </div>
         </header>
 
         <div className="p-content">
+          {/* INFO PRINCIPAL */}
+          <div className="detail-cards">
+            <div className="detail-card">
+              <div className="detail-icon"><IconUser /></div>
+              <div className="detail-info">
+                <p className="detail-label">Cliente</p>
+                <p className="detail-value">{venda.cliente_nome}</p>
+              </div>
+            </div>
 
-          {/* INFO */}
-          <div className="stat-card">
-            <p><strong>Cliente:</strong> {venda.cliente_nome}</p>
-            <p><strong>Vendedor:</strong> {venda.vendedor_nome}</p>
-            <p><strong>Data:</strong> {formatDate(venda.data_venda)}</p>
-            <p><strong>Status:</strong> {venda.status === 1 ? "Concluída" : "Cancelada"}</p>
+            <div className="detail-card">
+              <div className="detail-icon"><IconAlertCircle /></div>
+              <div className="detail-info">
+                <p className="detail-label">Vendedor</p>
+                <p className="detail-value">{venda.vendedor_nome}</p>
+              </div>
+            </div>
+
+            <div className="detail-card">
+              <div className="detail-icon"><IconClock /></div>
+              <div className="detail-info">
+                <p className="detail-label">Data da Venda</p>
+                <p className="detail-value">{formatDate(venda.data_venda)}</p>
+              </div>
+            </div>
+
+            <div className="detail-card">
+              <div className={`detail-icon ${venda.status === 1 ? 'status-ok' : 'status-cancel'}`}>
+                {venda.status === 1 ? <IconAlertCircle /> : <IconX />}
+              </div>
+              <div className="detail-info">
+                <p className="detail-label">Status</p>
+                <p className="detail-value">{venda.status === 1 ? "Concluída" : "Cancelada"}</p>
+              </div>
+            </div>
           </div>
 
           {/* ITENS */}
           <div className="table-card">
-            <h3>Itens da Venda</h3>
+            <div className="table-header">
+              <h3>Itens da Venda</h3>
+            </div>
 
             <table>
               <thead>
                 <tr>
                   <th>Produto</th>
-                  <th>Qtd</th>
+                  <th>Quantidade</th>
                   <th>Valor Unit.</th>
                   <th>Subtotal</th>
                 </tr>
@@ -118,17 +174,20 @@ export default function VendasDetalhes() {
               <tbody>
                 {venda.itens.map((i) => (
                   <tr key={i.id_item_venda}>
-                    <td>{i.produto_nome}</td>
-                    <td>{i.quantidade}</td>
-                    <td>{formatCurrency(i.valor_unitario)}</td>
-                    <td>{formatCurrency(i.subtotal)}</td>
+                    <td className="td-nome">{i.produto_nome}</td>
+                    <td className="td-center">{i.quantidade}</td>
+                    <td className="td-center">{formatCurrency(i.valor_unitario)}</td>
+                    <td className="td-center"><strong>{formatCurrency(i.subtotal)}</strong></td>
                   </tr>
                 ))}
               </tbody>
             </table>
 
-            <div style={{ marginTop: 20, textAlign: "right" }}>
-              <strong>Total: {formatCurrency(venda.valor_total)}</strong>
+            <div className="table-footer">
+              <div className="total-info">
+                <p className="total-label">Total da Venda:</p>
+                <p className="total-value">{formatCurrency(venda.valor_total)}</p>
+              </div>
             </div>
           </div>
         </div>

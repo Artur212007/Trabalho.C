@@ -58,6 +58,72 @@
   padding: 28px 32px; 
 }
 
+/* ── Detail Cards ── */
+.detail-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.detail-card {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid rgba(0,0,0,.09);
+  padding: 18px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  animation: fadeUp .4s ease both;
+}
+
+.detail-card:nth-child(1) { animation-delay: .05s; }
+.detail-card:nth-child(2) { animation-delay: .10s; }
+.detail-card:nth-child(3) { animation-delay: .15s; }
+.detail-card:nth-child(4) { animation-delay: .20s; }
+
+.detail-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+  background: #F5F5F5;
+}
+
+.detail-icon.status-ok {
+  background: #d4f5e5;
+  color: #15803d;
+}
+
+.detail-icon.status-cancel {
+  background: #ffe4dd;
+  color: #c2410c;
+}
+
+.detail-info {
+  flex: 1;
+}
+
+.detail-label {
+  font-size: 11px;
+  color: #71797E;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  margin-bottom: 4px;
+}
+
+.detail-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1A1A1A;
+  line-height: 1.3;
+}
+
 /* ── Stats ── */
 .stats-row {
   display: grid;
@@ -191,6 +257,35 @@ tbody td { padding: 14px 24px; font-size: 13px; }
 .td-id   { color: #71797E; font-size: 12px; }
 .td-dim  { color: #71797E; }
 .td-valor { font-weight: 600; color: #1A1A1A; }
+.td-center { text-align: center; }
+
+/* ── Table Footer ── */
+.table-footer {
+  padding: 18px 24px;
+  background: #fafafa;
+  border-top: 1px solid rgba(0,0,0,.09);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.total-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.total-label {
+  font-size: 12px;
+  color: #71797E;
+  font-weight: 500;
+}
+
+.total-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1A1A1A;
+}
 
 /* ── Status Badge ── */
 .badge {
@@ -410,7 +505,7 @@ tbody td { padding: 14px 24px; font-size: 13px; }
 
 .toast-dot.ok  { background: #16A34A; }
 .toast-dot.err { background: #FF4500; }
-.toast-dot.del { background: #FF4500; }
+.toast-dot.del { background: #DC2626; }
 
 /* ── Scrollbar ── */
 .p-content::-webkit-scrollbar { width: 6px; }
