@@ -2,12 +2,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
-import { IconAlertCircle } from "../../components/icons";
+import { IconAlert } from "../../components/ui/icons";
 import "../login/login.css";
-
-const IconEye = () => <span style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>👁️</span>;
-
-const IconEyeOff = () => <span style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>🚫</span>;
 
 function formatarTelefone(valor: string) {
   const nums = valor.replace(/\D/g, "").slice(0, 11);
@@ -23,7 +19,6 @@ export function SignUp() {
   const [usuario, setUsuario]           = useState("");
   const [telefone, setTelefone]         = useState("");
   const [senha, setSenha]               = useState("");
-  const [mostraSenha, setMostraSenha]   = useState(false);
   const [erro, setErro]                 = useState("");
   const [carregando, setCarregando]     = useState(false);
   const navigate = useNavigate();
@@ -97,7 +92,6 @@ export function SignUp() {
               placeholder="Seu nome completo"
               value={nomeCompleto}
               onChange={e => setNomeCompleto(e.target.value)}
-              maxLength={100}
             />
 
             <div className="label"><label>E-mail <span style={{color:"#aaa", fontWeight:400}}>(opcional)</span></label></div>
@@ -106,7 +100,6 @@ export function SignUp() {
               placeholder="seu@email.com"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              maxLength={100}
             />
 
             <div className="label"><label>Usuário *</label></div>
@@ -115,7 +108,6 @@ export function SignUp() {
               placeholder="Crie um nome de usuário"
               value={usuario}
               onChange={e => setUsuario(e.target.value)}
-              maxLength={50}
             />
 
             <div className="label"><label>Telefone <span style={{color:"#aaa", fontWeight:400}}>(opcional)</span></label></div>
@@ -128,28 +120,17 @@ export function SignUp() {
             />
 
             <div className="label"><label>Senha</label></div>
-            <div className="password-input-wrapper">
-              <Input
-                type={mostraSenha ? "text" : "password"}
-                placeholder="Crie uma senha forte"
-                value={senha}
-                onChange={e => setSenha(e.target.value)}
-                maxLength={50}
-                onKeyDown={e => e.key === "Enter" && handleCadastro()}
-              />
-              <button
-                type="button"
-                className="toggle-senha"
-                onClick={() => setMostraSenha(!mostraSenha)}
-                title={mostraSenha ? "Ocultar senha" : "Mostrar senha"}
-              >
-                {mostraSenha ? <IconEyeOff /> : <IconEye />}
-              </button>
-            </div>
+            <Input
+              type="password"
+              placeholder="Crie uma senha forte"
+              value={senha}
+              onChange={e => setSenha(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && handleCadastro()}
+            />
 
             {erro && (
-              <p style={{ color: "red", fontSize: "13px", marginTop: "8px", alignSelf: "flex-start", width: "100%", display: "flex", alignItems: "center", gap: "8px" }}>
-                <IconAlertCircle /> {erro}
+              <p style={{ color: "red", fontSize: "13px", marginTop: "8px", alignSelf: "flex-start", width: "100%" }}>
+                <IconAlert style={{ width: 14, height: 14, marginRight: 6, verticalAlign: "-2px" }} /> {erro}
               </p>
             )}
 

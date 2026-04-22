@@ -27,23 +27,50 @@
   gap: 16px;
 }
 
-.pf-back {
+.pf-back,
+.btn-back {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: none;
-  border: none;
   cursor: pointer;
   font-family: 'Poppins', sans-serif;
   font-size: 14px;
   font-weight: 600;
-  color: #1A1A1A;
   padding: 8px 14px;
-  border-radius: 10px;
-  border: 1.5px solid rgba(0,0,0,.12);
   transition: all .2s;
 }
-.pf-back:hover { background: #1A1A1A; color: #ffffff; border-color: #1A1A1A; }
+
+.pf-back {
+  background: transparent;
+  border: 1.5px solid rgba(15, 23, 42, .12);
+  color: #0f172a;
+  border-radius: 999px;
+}
+
+.pf-back:hover { background: #111827; color: #ffffff; border-color: #111827; box-shadow: 0 10px 22px rgba(15, 23, 42, .16); }
+
+.btn-back {
+  background: transparent;
+  color: #111827;
+  border: 1.5px solid rgba(15, 23, 42, .18);
+  border-radius: 999px;
+  box-shadow: none;
+  padding-top: 7px;
+  padding-bottom: 8px;
+}
+
+.btn-back:hover { background: rgba(15, 23, 42, .04); border-color: rgba(15, 23, 42, .2); box-shadow: none; }
+
+.btn-back:focus-visible,
+.pf-back:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(255, 209, 0, .16);
+}
+
+.btn-back span {
+  position: relative;
+  top: -2px;
+}
 
 .pf-title-block h1 { font-size: 22px; font-weight: 700; }
 .pf-title-block p  { font-size: 13px; color: #71797E; margin-top: 2px; }
@@ -153,7 +180,8 @@
 .pf-footer-right { display: flex; gap: 10px; }
 
 /* ── Buttons ── */
-.btn {
+.btn,
+.btn-back {
   cursor: pointer;
   border: none;
   border-radius: 10px;
@@ -176,8 +204,8 @@
   box-shadow: 0 4px 12px rgba(255,209,0,.4);
 }
 
-.btn-ghost { background: transparent; color: #71797E; border: 1.5px solid rgba(0,0,0,.12); }
-.btn-ghost:hover:not(:disabled) { border-color: #1A1A1A; color: #1A1A1A; }
+.btn-ghost { background: transparent; color: #111827 !important; border: 1.5px solid rgba(0,0,0,.12); }
+.btn-ghost:hover:not(:disabled) { border-color: #1A1A1A; color: #111827 !important; }
 
 .btn-danger { background: #FF4500; color: #fff; }
 .btn-danger:hover:not(:disabled) { background: #e03d00; transform: translateY(-1px); }
@@ -245,7 +273,7 @@
 .toast-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .toast-dot.ok  { background: #16A34A; }
 .toast-dot.err { background: #FF4500; }
-.toast-dot.del { background: #DC2626; }
+.toast-dot.del { background: #FF4500; }
 
 /* ── Responsivo ── */
 @media (max-width: 900px) {

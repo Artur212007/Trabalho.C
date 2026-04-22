@@ -410,7 +410,7 @@ tbody td { padding: 14px 24px; font-size: 13px; }
 
 .toast-dot.ok  { background: #16A34A; }
 .toast-dot.err { background: #FF4500; }
-.toast-dot.del { background: #DC2626; }
+.toast-dot.del { background: #FF4500; }
 
 /* ── Scrollbar ── */
 .p-content::-webkit-scrollbar { width: 6px; }

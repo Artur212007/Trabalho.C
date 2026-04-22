@@ -1,0 +1,169 @@
+const router = require('express').Router();
+const db     = require('../db');
+const auth   = require('../middleware/Auth');
+const { q }  = require('../helpers/db');
+const { err400, err404, err500, ok } = require('../helpers/Response');
+
+// ── ESTATÍSTICAS ──────────────────────────────────────────────────────────────
+router.get('/estatisticas', auth, async (req, res) => {
+  const fmts = {
+    dia: ['DATE(data_venda)', '%d/%m/%Y'],
+    mes: ['DATE_FORMAT(data_venda,"%Y-%m")', '%m/%Y'],
+    ano: ['YEAR(data_venda)', '%Y'],
+  };
+  const [grp, fmt] = fmts[req.query.periodo] || fmts.dia;
+  try {
+    const rows = await q(
+      `SELECT DATE_FORMAT(data_venda,'${fmt}') AS periodo, COUNT(*) AS quantidade, COALESCE(SUM(valor_total),0) AS total
+       FROM venda WHERE status=1 GROUP BY ${grp} ORDER BY data_venda DESC LIMIT 30`
+    );
+    res.json({
+      total_vendas:     rows.reduce((a, r) => a + r.total, 0),
+      total_transacoes: rows.reduce((a, r) => a + r.quantidade, 0),
+      dados: rows,
+    });
+  } catch (e) { err500(res, e); }
+});
+
+// ── VENDAS POR CLIENTE ────────────────────────────────────────────────────────
+router.get('/cliente/:id', auth, async (req, res) => {
+  try {
+    res.json(await q(
+      `SELECT v.id_venda,v.valor_total,v.data_venda,v.status,f.nome AS vendedor_nome
+       FROM venda v LEFT JOIN funcionario f ON f.id_funcionario=v.id_vendedor
+       WHERE v.id_cliente=? ORDER BY v.data_venda DESC`,
+      [req.params.id]
+    ));
+  } catch (e) { err500(res, e); }
+});
+
+// ── VENDAS POR PERÍODO ────────────────────────────────────────────────────────
+router.get('/periodo', auth, async (req, res) => {
+  const { data_inicio, data_fim } = req.query;
+  if (!data_inicio || !data_fim) return err400(res, 'data_inicio e data_fim obrigatórias');
+  try {
+    const rows = await q(
+      `SELECT v.id_venda,v.valor_total,v.data_venda,v.status,c.nome AS cliente_nome,f.nome AS vendedor_nome
+       FROM venda v
+       LEFT JOIN cliente c ON c.id_cliente=v.id_cliente
+       LEFT JOIN funcionario f ON f.id_funcionario=v.id_vendedor
+       WHERE DATE(v.data_venda) BETWEEN ? AND ? ORDER BY v.data_venda DESC`,
+      [data_inicio, data_fim]
+    );
+    res.json({ total_periodo: rows.reduce((a, r) => a + r.valor_total, 0), quantidade: rows.length, vendas: rows });
+  } catch (e) { err500(res, e); }
+});
+
+// ── LISTAR ────────────────────────────────────────────────────────────────────
+router.get('/', auth, async (req, res) => {
+  try {
+    res.json(await q(
+      `SELECT v.id_venda,v.valor_total,v.data_venda,v.status,
+              c.nome AS cliente_nome,c.id_cliente,
+              f.nome AS vendedor_nome,f.id_funcionario AS vendedor_id
+       FROM venda v
+       LEFT JOIN cliente c ON c.id_cliente=v.id_cliente
+       LEFT JOIN funcionario f ON f.id_funcionario=v.id_vendedor
+       ORDER BY v.data_venda DESC`
+    ));
+  } catch (e) { err500(res, e); }
+});
+
+// ── BUSCAR POR ID ─────────────────────────────────────────────────────────────
+router.get('/:id', auth, async (req, res) => {
+  try {
+    const [venda, itens] = await Promise.all([
+      q(`SELECT v.*,c.nome AS cliente_nome,c.cpf_cnpj,c.telefone,f.nome AS vendedor_nome,f.id_funcionario AS vendedor_id
+         FROM venda v LEFT JOIN cliente c ON c.id_cliente=v.id_cliente LEFT JOIN funcionario f ON f.id_funcionario=v.id_vendedor
+         WHERE v.id_venda=?`, [req.params.id]),
+      q(`SELECT iv.*,p.nome AS produto_nome,(iv.quantidade*iv.valor_unitario) AS subtotal
+         FROM item_venda iv LEFT JOIN produto p ON p.id_produto=iv.id_produto WHERE iv.id_venda=?`, [req.params.id]),
+    ]);
+    if (!venda.length) return err404(res, 'Venda não encontrada');
+    res.json({ ...venda[0], itens });
+  } catch (e) { err500(res, e); }
+});
+
+// ── CRIAR ─────────────────────────────────────────────────────────────────────
+router.post('/', auth, async (req, res) => {
+  const { id_cliente, id_vendedor, itens, valor_total, desconto } = req.body;
+  if (!id_vendedor)    return err400(res, 'Vendedor é obrigatório');
+  if (!id_cliente)     return err400(res, 'Cliente é obrigatório');
+  if (!itens?.length)  return err400(res, 'Adicione pelo menos um produto');
+
+  try {
+    const [cliente] = await q(`SELECT id_cliente,nome FROM cliente WHERE id_cliente=? AND ativo=1`, [id_cliente]);
+    if (!cliente) return err400(res, 'Cliente não encontrado ou inativo');
+
+    // Verifica estoque
+    await Promise.all(itens.map(async item => {
+      const [p] = await q(`SELECT quantidade_estoque,nome FROM produto WHERE id_produto=?`, [item.id_produto]);
+      if (!p) throw new Error(`Produto ID ${item.id_produto} não encontrado`);
+      if (p.quantidade_estoque < item.quantidade)
+        throw new Error(`Estoque insuficiente para "${p.nome}". Disponível: ${p.quantidade_estoque}`);
+    }));
+
+    await new Promise((resolve, reject) => db.beginTransaction(e => e ? reject(e) : resolve()));
+    try {
+      const valorFinal = desconto ? valor_total - desconto : valor_total;
+      const { insertId: id_venda } = await q(
+        `INSERT INTO venda (id_cliente,id_vendedor,valor_total,data_venda,status) VALUES (?,?,?,NOW(),1)`,
+        [id_cliente, id_vendedor, valorFinal]
+      );
+
+      await q(
+        `INSERT INTO item_venda (id_venda,id_produto,quantidade,valor_unitario) VALUES ?`,
+        [itens.map(i => [id_venda, i.id_produto, i.quantidade, i.valor_unitario])]
+      );
+
+      await Promise.all(itens.map(i =>
+        q(`UPDATE produto SET quantidade_estoque=quantidade_estoque-? WHERE id_produto=? AND quantidade_estoque>=?`,
+          [i.quantidade, i.id_produto, i.quantidade])
+      ));
+
+      await new Promise((resolve, reject) => db.commit(e => e ? reject(e) : resolve()));
+      res.status(201).json({ success: true, message: 'Venda registrada com sucesso', id_venda, cliente: cliente.nome, valor_total: valorFinal });
+    } catch (e) {
+      await new Promise(r => db.rollback(r));
+      throw e;
+    }
+  } catch (e) { res.status(400).json({ error: e.message }); }
+});
+
+// ── CANCELAR ──────────────────────────────────────────────────────────────────
+router.put('/:id/cancelar', auth, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [venda] = await q(`SELECT id_venda,status FROM venda WHERE id_venda=?`, [id]);
+    if (!venda) return err404(res, 'Venda não encontrada');
+    if (venda.status === 0) return err400(res, 'Venda já está cancelada');
+
+    const itens = await q(`SELECT id_produto,quantidade FROM item_venda WHERE id_venda=?`, [id]);
+
+    await new Promise((resolve, reject) => db.beginTransaction(e => e ? reject(e) : resolve()));
+    try {
+      await q(`UPDATE venda SET status=0 WHERE id_venda=?`, [id]);
+      await Promise.all(itens.map(i =>
+        q(`UPDATE produto SET quantidade_estoque=quantidade_estoque+? WHERE id_produto=?`, [i.quantidade, i.id_produto])
+      ));
+      await new Promise((resolve, reject) => db.commit(e => e ? reject(e) : resolve()));
+      ok(res, { message: 'Venda cancelada e estoque restaurado' });
+    } catch (e) {
+      await new Promise(r => db.rollback(r));
+      throw e;
+    }
+  } catch (e) { err500(res, e); }
+});
+
+// ── EXCLUIR ───────────────────────────────────────────────────────────────────
+router.delete('/:id', auth, async (req, res) => {
+  try {
+    const [venda] = await q(`SELECT id_venda FROM venda WHERE id_venda=?`, [req.params.id]);
+    if (!venda) return err404(res, 'Venda não encontrada');
+    if (req.user.nivel !== 1) return res.status(403).json({ error: 'Apenas administradores podem excluir vendas' });
+    await q(`UPDATE venda SET status=0 WHERE id_venda=?`, [req.params.id]);
+    ok(res, { message: 'Venda cancelada com sucesso' });
+  } catch (e) { err500(res, e); }
+});
+
+module.exports = router;

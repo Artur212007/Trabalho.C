@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sidebar } from "../../components/sidebar";
-import { IconDollarSign, IconAlertCircle, IconClock } from "../../components/icons";
+import { IconCart, IconCheck, IconChart, IconClock, IconMoney } from "../../components/ui/icons";
 import "./vendas.css";
 
 const API = "http://localhost:3001/api"; // ✅ Adicionado /api
@@ -18,11 +18,26 @@ interface Venda {
   status_texto: string;
 }
 
-const IconPlus = () => <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
+const IconPlus = () => (
+  <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+    <line x1="12" y1="5" x2="12" y2="19"/>
+    <line x1="5" y1="12" x2="19" y2="12"/>
+  </svg>
+);
 
-const IconEye = () => <span style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>👁️</span>;
+const IconEye = () => (
+  <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+    <circle cx="12" cy="12" r="3"/>
+  </svg>
+);
 
-const IconSearch = () => <span style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>🔍</span>;
+const IconSearch = () => (
+  <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+    <circle cx="11" cy="11" r="8"/>
+    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+  </svg>
+);
 
 // ✅ Função auxiliar para fetch com token
 async function fetchWithAuth(url: string, options: RequestInit = {}) {
@@ -153,7 +168,7 @@ export default function Vendas() {
           {/* STATS */}
           <div className="stats-row">
             <div className="stat-card">
-              <div className="stat-icon si-yellow"><IconDollarSign /></div>
+              <div className="stat-icon si-yellow"><IconMoney /></div>
               <div className="stat-info">
                 <p>Total em Vendas</p>
                 <strong>{formatCurrency(stats.total_valor)}</strong>
@@ -161,7 +176,7 @@ export default function Vendas() {
             </div>
 
             <div className="stat-card">
-              <div className="stat-icon si-green"><IconAlertCircle /></div>
+              <div className="stat-icon si-green"><IconCheck /></div>
               <div className="stat-info">
                 <p>Concluídas</p>
                 <strong>{stats.concluidas}</strong>
@@ -177,7 +192,7 @@ export default function Vendas() {
             </div>
 
             <div className="stat-card">
-              <div className="stat-icon si-blue"><IconDollarSign /></div>
+              <div className="stat-icon si-blue"><IconChart /></div>
               <div className="stat-info">
                 <p>Total de Vendas</p>
                 <strong>{stats.total}</strong>
@@ -204,12 +219,12 @@ export default function Vendas() {
 
             {loading ? (
               <div className="empty-state">
-                <div className="big-icon"><IconClock /></div>
+                <div className="big-icon"><IconClock style={{ width: 32, height: 32 }} /></div>
                 <p>Carregando vendas...</p>
               </div>
             ) : lista.length === 0 ? (
               <div className="empty-state">
-                <div className="big-icon"><IconAlertCircle /></div>
+                <div className="big-icon"><IconCart style={{ width: 32, height: 32 }} /></div>
                 <p>Nenhuma venda encontrada.<br />Clique em <strong>Nova Venda</strong> para registrar.</p>
               </div>
             ) : (

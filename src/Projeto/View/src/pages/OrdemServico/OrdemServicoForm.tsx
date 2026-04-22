@@ -1,25 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Sidebar } from "../../components/sidebar";
-import { IconArrowLeft, IconClock } from "../../components/icons";
-import "./OrdemServico.css";
+import "./OrdemServicoForm.css";
 
 const API = "http://localhost:3001/api";
-
-// Hook para notificações toast
-function useToast() {
-  const [toast, setToast] = useState<{ msg: string; type: 'ok' | 'err'; visible: boolean }>({ msg: '', type: 'ok', visible: false });
-  function show(msg: string, type: 'ok' | 'err' = 'ok') {
-    setToast({ msg, type, visible: true });
-    setTimeout(() => setToast(t => ({ ...t, visible: false })), 3000);
-  }
-  return { toast, show };
-}
 
 export default function OrdemServicoForm() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const { toast, show: showToast } = useToast();
 
   const [clientes, setClientes] = useState<any[]>([]);
   const [tecnicos, setTecnicos] = useState<any[]>([]);
@@ -27,7 +15,10 @@ export default function OrdemServicoForm() {
   const [idCliente, setIdCliente] = useState("");
   const [idTecnico, setIdTecnico] = useState("");
   const [descricao, setDescricao] = useState("");
+
+  // 🔥 NOVOS CAMPOS
   const [status, setStatus] = useState("0");
+  const [idOrcamento, setIdOrcamento] = useState("");
 
   const [loading, setLoading] = useState(false);
 
@@ -57,7 +48,7 @@ export default function OrdemServicoForm() {
       setClientes(data);
     } catch (err) {
       console.error(err);
-      showToast("Erro ao carregar clientes", 'err');
+      alert("Erro ao carregar clientes");
     }
   }
 
@@ -99,8 +90,12 @@ export default function OrdemServicoForm() {
 
       setIdCliente(String(data.id_cliente));
       setIdTecnico(String(data.id_tecnico || ""));
-      setDescricao(data.descricao_problema);
-      setStatus(String(data.status));
+      setDescricao(data.descricao_problema || "");
+
+      // 🔥 NOVOS CAMPOS
+      setStatus(String(data.status ?? "0"));
+      setIdOrcamento(String(data.id_orcamento || ""));
+
     } catch (err) {
       console.error(err);
       alert("Erro ao carregar OS");
@@ -122,13 +117,13 @@ export default function OrdemServicoForm() {
       setLoading(true);
 
       const token = localStorage.getItem("token");
-
-      const payload = {
-        id_cliente: Number(idCliente),
-        id_tecnico: idTecnico ? Number(idTecnico) : null,
-        descricao_problema: descricao, // ✅ CORRETO
-        status: Number(status),
-      };
+     const payload = {
+  id_cliente: Number(idCliente),
+  id_tecnico: idTecnico ? Number(idTecnico) : null,
+  descricao_problema: descricao,
+  status: Number(status),
+  id_orcamento: idOrcamento ? Number(idOrcamento) : null
+};
 
       const url = id
         ? `${API}/OrdemServico/${id}`
@@ -140,23 +135,23 @@ export default function OrdemServicoForm() {
         method,
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`, // ✅ ESSENCIAL
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
         const err = await res.json();
-        showToast(err.error || "Erro ao salvar ordem de serviço", 'err');
+        alert(err.error || "Erro ao salvar");
         return;
       }
 
-      showToast(`Ordem de serviço ${id ? 'atualizada' : 'criada'} com sucesso!`, 'ok');
-      navigate("/ordem-servico");
+      alert("Salvo com sucesso!");
+      navigate("/ordem");
 
     } catch (err) {
       console.error(err);
-      showToast("Erro ao salvar ordem de serviço", 'err');
+      alert("Erro ao salvar");
     } finally {
       setLoading(false);
     }
@@ -166,141 +161,101 @@ export default function OrdemServicoForm() {
   // UI
   // =========================
   return (
-    <div className="ordem-servico-wrapper">
+    <div className="funcionarios-wrapper">
       <Sidebar />
 
-      <div className="ordem-servico-page">
+      <div className="funcionarios-page">
         <header className="p-topbar">
           <div className="p-topbar-title">
-            {id ? "Editar Ordem de Serviço" : "Nova Ordem de Serviço"} <span>Formulário</span>
+            {id ? "Editar OS" : "Nova OS"}
           </div>
+
           <div className="p-topbar-actions">
-            <button className="btn btn-ghost" onClick={() => navigate("/ordem-servico")}>
-              <IconArrowLeft /> Voltar
+            <button
+              type="button"
+              className="btn btn-back"
+              onClick={() => navigate("/ordem")}
+            >
+              Voltar
             </button>
           </div>
         </header>
 
         <div className="p-content">
-          <div className="pf-card">
-            <div className="pf-card-header">
-              <div className="pf-card-icon"><IconClock /></div>
-              <div>
-                <h2>{id ? "Editar Ordem de Serviço" : "Nova Ordem de Serviço"}</h2>
-                <p>Preencha os dados do formulário</p>
-              </div>
+          <form className="form-card" onSubmit={salvar}>
+
+            {/* CLIENTE */}
+            <label>Cliente</label>
+            <select
+              value={idCliente}
+              onChange={(e) => setIdCliente(e.target.value)}
+            >
+              <option value="">Selecione</option>
+              {clientes.map((c) => (
+                <option key={c.id_cliente} value={c.id_cliente}>
+                  {c.nome}
+                </option>
+              ))}
+            </select>
+
+            {/* TECNICO */}
+            <label>Técnico</label>
+            <select
+              value={idTecnico}
+              onChange={(e) => setIdTecnico(e.target.value)}
+            >
+              <option value="">Nenhum</option>
+              {tecnicos.map((t) => (
+                <option key={t.id_funcionario} value={t.id_funcionario}>
+                  {t.nome}
+                </option>
+              ))}
+            </select>
+
+            {/* DESCRIÇÃO */}
+            <label>Descrição</label>
+            <textarea
+              value={descricao}
+              onChange={(e) => setDescricao(e.target.value)}
+            />
+
+            {/* 🔥 STATUS NOVO */}
+            <label>Status</label>
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+            >
+              <option value="0">Pendente</option>
+              <option value="1">Feito</option>
+              <option value="2">Cancelado</option>
+            </select>
+
+            {/* 🔥 ID ORÇAMENTO */}
+            <label>ID do Orçamento</label>
+            <input
+              type="number"
+              value={idOrcamento}
+              onChange={(e) => setIdOrcamento(e.target.value)}
+              placeholder="Opcional"
+            />
+
+            {/* BOTÕES */}
+            <div style={{ marginTop: 20 }}>
+              <button className="btn btn-primary" disabled={loading}>
+                {loading ? "Salvando..." : "Salvar"}
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={() => navigate("/ordem")}
+              >
+                Cancelar
+              </button>
             </div>
 
-            <form className="pf-form" onSubmit={salvar}>
-              <div className="pf-grid">
-                {/* CLIENTE */}
-                <div className="pf-field">
-                  <label>Cliente *</label>
-                  <select
-                    value={idCliente}
-                    onChange={(e) => setIdCliente(e.target.value)}
-                    required
-                  >
-                    <option value="">Selecione um cliente</option>
-                    {clientes.map((c) => (
-                      <option key={c.id_cliente} value={c.id_cliente}>
-                        {c.nome}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* TECNICO */}
-                <div className="pf-field">
-                  <label>Técnico Responsável</label>
-                  <select
-                    value={idTecnico}
-                    onChange={(e) => setIdTecnico(e.target.value)}
-                  >
-                    <option value="">Selecione um técnico</option>
-                    {tecnicos.map((t) => (
-                      <option key={t.id_funcionario} value={t.id_funcionario}>
-                        {t.nome}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* STATUS */}
-                <div className="pf-field">
-                  <label>Status *</label>
-                  <select
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value)}
-                    required
-                  >
-                    <option value="0">Aberta</option>
-                    <option value="1">Concluída</option>
-                  </select>
-                </div>
-
-                {/* DESCRIÇÃO */}
-                <div className="pf-field pf-full">
-                  <label>Descrição do Problema *</label>
-                  <textarea
-                    maxLength={150}
-                    value={descricao}
-                    onChange={(e) => setDescricao(e.target.value)}
-                    placeholder="Descreva detalhadamente o problema relatado..."
-                    rows={4}
-                    required
-                    style={{
-                      background: '#F5F5F5',
-                      color: '#1A1A1A',
-                      borderRadius: '10px',
-                      border: '1.5px solid rgba(0,0,0,.1)',
-                      padding: '14px',
-                      fontFamily: 'Poppins, sans-serif',
-                      fontSize: '13px',
-                      outline: 'none',
-                      transition: 'border-color .2s, box-shadow .2s',
-                      width: '100%',
-                      resize: 'vertical'
-                    }}
-                    onFocus={(e) => {
-                      e.target.style.borderColor = '#FFD100';
-                      e.target.style.boxShadow = '0 0 0 3px rgba(255,209,0,.15)';
-                      e.target.style.background = '#fff';
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = 'rgba(0,0,0,.1)';
-                      e.target.style.boxShadow = 'none';
-                      e.target.style.background = '#F5F5F5';
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* BOTÕES */}
-              <div className="pf-footer">
-                <div></div>
-                <div className="pf-footer-right">
-                  <button
-                    type="button"
-                    className="btn btn-ghost"
-                    onClick={() => navigate("/ordem-servico")}
-                    disabled={loading}
-                  >
-                    Cancelar
-                  </button>
-                  <button className="btn btn-primary" disabled={loading}>
-                    {loading ? "Salvando..." : (id ? "Atualizar OS" : "Criar OS")}
-                  </button>
-                </div>
-              </div>
-            </form>
-          </div>
+          </form>
         </div>
-      </div>
-
-      <div className={`toast${toast.visible ? ' show' : ''}`}>
-        <span className={`toast-dot ${toast.type}`} />
-        <span>{toast.msg}</span>
       </div>
     </div>
   );

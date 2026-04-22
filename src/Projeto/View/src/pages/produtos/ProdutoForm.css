@@ -171,7 +171,7 @@
 }
 
 .btn-primary { background: #16A34A; color: #fff; }
-.btn-ghost { background: transparent; color: #71797E; border: 1.5px solid rgba(0,0,0,.12); }
+.btn-ghost { background: transparent; color: #111827 !important; border: 1.5px solid rgba(0,0,0,.12); }
 .btn-danger { background: #FF4500; color: #fff; }
 
 /* ── Toast (Texto em Branco Puro) ── */
@@ -205,7 +205,6 @@
 .toast-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .toast-dot.ok  { background: #16A34A; }
 .toast-dot.err { background: #FF4500; }
-.toast-dot.del { background: #DC2626; }
 
 /* ── Responsivo ── */
 @media (max-width: 600px) {

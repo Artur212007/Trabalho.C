@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Sidebar } from "../../components/sidebar/";
-import { IconArrowLeft } from "../../components/icons";
+import { IconBuilding, IconClock } from "../../components/ui/icons";
 import "./FornecedorForm.css";
 
 const API = "http://localhost:3001/api"; // ✅ Adicionado /api
@@ -15,7 +15,17 @@ interface FormData {
 
 const EMPTY: FormData = { nome: "", telefone: "", email: "", endereco: "" };
 
-const IconCheck = () => <span style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>✅</span>;
+const IconArrow = () => (
+  <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+    <line x1="19" y1="12" x2="5" y2="12" />
+    <polyline points="12 19 5 12 12 5" />
+  </svg>
+);
+const IconCheck = () => (
+  <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+    <polyline points="20 6 9 17 4 12" />
+  </svg>
+);
 const IconTrash = () => (
   <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
     <polyline points="3 6 5 6 21 6" />
@@ -126,7 +136,7 @@ export default function FornecedorForm() {
         throw new Error(error);
       }
       
-      showToast(isEdit ? "Fornecedor atualizado!" : "Fornecedor cadastrado!");
+      showToast(isEdit ? "Fornecedor atualizado com sucesso!" : "Fornecedor cadastrado com sucesso!");
       setTimeout(() => navigate("/fornecedores"), 1200);
     } catch (err) {
       console.error(err);
@@ -153,7 +163,7 @@ export default function FornecedorForm() {
         throw new Error(error);
       }
       
-      showToast("Fornecedor removido com sucesso!", "del");
+      showToast("Fornecedor excluído com sucesso!", "del");
       setTimeout(() => navigate("/fornecedores"), 1200);
     } catch (err) {
       console.error(err);
@@ -180,8 +190,8 @@ export default function FornecedorForm() {
       <div className="pf-page">
         <div className="pf-header">
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-            <button className="btn btn-ghost" onClick={() => navigate("/fornecedores")}>
-              <IconArrowLeft /> Voltar
+            <button className="btn btn-back pf-back" onClick={() => navigate("/fornecedores")}>
+              <IconArrow /> <span>Voltar</span>
             </button>
             <div className="pf-title-block">
               <h1>{isEdit ? "Editar Fornecedor" : "Novo Fornecedor"}</h1>
@@ -199,7 +209,7 @@ export default function FornecedorForm() {
 
         <div className="pf-card">
           <div className="pf-card-header">
-            <div className="pf-card-icon">🏭</div>
+            <div className="pf-card-icon"><IconBuilding /></div>
             <div>
               <h2>{isEdit ? "Editar Fornecedor" : "Cadastro de Fornecedor"}</h2>
               <p>{isEdit ? `Editando fornecedor #${id}` : "Preencha os campos do novo fornecedor"}</p>
@@ -207,26 +217,26 @@ export default function FornecedorForm() {
           </div>
           
           {loading ? (
-            <div className="pf-loading">⏳ Carregando dados do fornecedor...</div>
+            <div className="pf-loading"><IconClock style={{ width: 16, height: 16, marginRight: 8 }} /> Carregando dados do fornecedor...</div>
           ) : (
             <div className="pf-form">
               <div className="pf-section-title">Informações Gerais</div>
               <div className="pf-grid">
                 <div className="pf-field pf-full">
                   <label>Nome da Empresa *</label>
-                  <input maxLength={100} value={form.nome} onChange={e => setField("nome", e.target.value)} placeholder="Ex: Ferramentas Alfa Ltda" />
+                  <input value={form.nome} onChange={e => setField("nome", e.target.value)} placeholder="Ex: Ferramentas Alfa Ltda" />
                 </div>
                 <div className="pf-field">
                   <label>Telefone</label>
-                  <input maxLength={15} value={form.telefone} onChange={e => setField("telefone", formatPhone(e.target.value))} placeholder="(00) 90000-0000" />
+                  <input value={form.telefone} onChange={e => setField("telefone", formatPhone(e.target.value))} placeholder="(00) 90000-0000" />
                 </div>
                 <div className="pf-field">
                   <label>E-mail</label>
-                  <input type="email" maxLength={100} value={form.email} onChange={e => setField("email", e.target.value)} placeholder="exemplo@email.com" />
+                  <input type="email" value={form.email} onChange={e => setField("email", e.target.value)} placeholder="exemplo@email.com" />
                 </div>
                 <div className="pf-field pf-full">
                   <label>Endereço</label>
-                  <input maxLength={150} value={form.endereco} onChange={e => setField("endereco", e.target.value)} placeholder="Ex: Rua das Indústrias, 100 - Fortaleza/CE" />
+                  <input value={form.endereco} onChange={e => setField("endereco", e.target.value)} placeholder="Ex: Rua das Indústrias, 100 - Fortaleza/CE" />
                 </div>
               </div>
             </div>
@@ -250,7 +260,7 @@ export default function FornecedorForm() {
         onClick={handleCloseModal}
       >
         <div className="confirm-modal" onClick={e => e.stopPropagation()}>
-          <div className="danger-icon">🗑️</div>
+          <div className="danger-icon"><IconTrash /></div>
           <h3>Remover este fornecedor?</h3>
           <p>O fornecedor será removido permanentemente do sistema.</p>
           <div className="confirm-actions">

@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { IconX } from "../../components/icons";
 import "../loja/Loja.css";
 
 const API = "http://localhost:3001";
@@ -104,10 +103,10 @@ function ProdutoCard({
             <div className="lj-qty">
               <button onClick={() => onAlterar(-1)}>−</button>
               <span>{noCarrinho}</span>
-              <button onClick={() => onAlterar(1)} disabled={noCarrinho >= p.quantidade_estoque}>+</button>
+              <button onClick={() => onAlterar(1)}>+</button>
             </div>
           ) : (
-            <button className="lj-add" onClick={onAdicionar} disabled={p.quantidade_estoque <= 0}>
+            <button className="lj-add" onClick={onAdicionar}>
               Adicionar
             </button>
           )}
@@ -168,12 +167,7 @@ export default function Loja() {
   function adicionarAoCarrinho(produto: Produto) {
     setCarrinho(prev => {
       const existe = prev.find(i => i.produto.id === produto.id);
-      if (existe) {
-        // Se já existe, adiciona 1, mas não ultrapassa o estoque
-        const novaQtd = existe.quantidade + 1;
-        if (novaQtd > produto.quantidade_estoque) return prev; // Não adiciona se ultrapassar
-        return prev.map(i => i.produto.id === produto.id ? { ...i, quantidade: novaQtd } : i);
-      }
+      if (existe) return prev.map(i => i.produto.id === produto.id ? { ...i, quantidade: i.quantidade + 1 } : i);
       return [...prev, { produto, quantidade: 1 }];
     });
   }
@@ -184,15 +178,7 @@ export default function Loja() {
 
   function alterarQtd(id: number, delta: number) {
     setCarrinho(prev =>
-      prev.map(i => {
-        if (i.produto.id === id) {
-          const novaQtd = i.quantidade + delta;
-          // Valida se não ultrapassa o estoque
-          if (novaQtd > i.produto.quantidade_estoque) return i;
-          return { ...i, quantidade: Math.max(1, novaQtd) };
-        }
-        return i;
-      })
+      prev.map(i => i.produto.id === id ? { ...i, quantidade: Math.max(1, i.quantidade + delta) } : i)
     );
   }
 
@@ -201,7 +187,7 @@ export default function Loja() {
     const usuario = usuarioRaw ? JSON.parse(usuarioRaw) : null;
 
     try {
-      const res = await fetch(`${API}/api/venda`, {
+      await fetch(`${API}/api/venda`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -214,28 +200,6 @@ export default function Loja() {
           valor_total: Math.round((subtotal + frete) * 100),
         }),
       });
-
-      if (res.ok) {
-        // Atualizar o estoque dos produtos após venda bem-sucedida
-        // Remover produtos que tiveram toda quantidade vendida
-        setProdutos(prev => prev.filter(p => {
-          const itemVendido = carrinho.find(c => c.produto.id === p.id);
-          if (itemVendido) {
-            // Reduzir estoque
-            const novoEstoque = p.quantidade_estoque - itemVendido.quantidade;
-            // Se ainda há estoque, manter na vitrine
-            return novoEstoque > 0;
-          }
-          // Produtos não vendidos mantêm
-          return true;
-        }).map(p => {
-          const itemVendido = carrinho.find(c => c.produto.id === p.id);
-          if (itemVendido) {
-            return { ...p, quantidade_estoque: p.quantidade_estoque - itemVendido.quantidade };
-          }
-          return p;
-        }));
-      }
     } catch (e) {
       console.warn("Erro ao salvar venda:", e);
     }
@@ -294,11 +258,6 @@ export default function Loja() {
           </nav>
 
           <div className="lj-header-right">
-            {usuario && usuario.cargo <= 2 && (
-              <button className="lj-hbtn" onClick={() => navigate("/dashboard")} title="Dashboard">
-                <svg width="19" height="19" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-              </button>
-            )}
             <button className="lj-hbtn" onClick={() => setBuscaAberta(v => !v)} title="Buscar">
               <svg width="19" height="19" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             </button>
@@ -333,7 +292,7 @@ export default function Loja() {
                 if (e.key === "Enter") { scrollTo("produtos"); setBuscaAberta(false); }
               }}
             />
-            {busca && <button onClick={() => setBusca("")}><IconX /></button>}
+            {busca && <button onClick={() => setBusca("")}>✕</button>}
           </div>
         </div>
       </header>

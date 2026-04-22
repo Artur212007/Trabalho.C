@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Sidebar } from "../../components/sidebar/";
-import { IconArrowLeft } from "../../components/icons";
+import { IconClock, IconUsers } from "../../components/ui/icons";
 import "./FuncionarioForm.css";
 
 const API = "http://localhost:3001/api"; // ✅ Adicionado /api
@@ -33,7 +33,17 @@ const CARGOS = [
   { id: 5, label: "CAIXA" },
 ];
 
-const IconCheck = () => <span style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>✅</span>;
+const IconArrow = () => (
+  <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+    <line x1="19" y1="12" x2="5" y2="12" />
+    <polyline points="12 19 5 12 12 5" />
+  </svg>
+);
+const IconCheck = () => (
+  <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+    <polyline points="20 6 9 17 4 12" />
+  </svg>
+);
 const IconTrash = () => (
   <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
     <polyline points="3 6 5 6 21 6" />
@@ -149,7 +159,7 @@ export default function FuncionarioForm() {
         throw new Error(error);
       }
       
-      showToast(isEdit ? "Funcionário atualizado!" : "Funcionário cadastrado!");
+      showToast(isEdit ? "Funcionário atualizado com sucesso!" : "Funcionário cadastrado com sucesso!");
       setTimeout(() => navigate("/funcionarios"), 1200);
     } catch (err) {
       console.error(err);
@@ -176,7 +186,7 @@ export default function FuncionarioForm() {
         throw new Error(error);
       }
       
-      showToast("Funcionário removido com sucesso!", "del");
+      showToast("Funcionário excluído com sucesso!", "del");
       setTimeout(() => navigate("/funcionarios"), 1200);
     } catch (err) {
       console.error(err);
@@ -203,8 +213,8 @@ export default function FuncionarioForm() {
       <div className="pf-page">
         <div className="pf-header">
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-            <button className="btn btn-ghost" onClick={() => navigate("/funcionarios")}>
-              <IconArrowLeft /> Voltar
+            <button className="btn btn-back pf-back" onClick={() => navigate("/funcionarios")}>
+              <IconArrow /> <span>Voltar</span>
             </button>
             <div className="pf-title-block">
               <h1>{isEdit ? "Editar Funcionário" : "Novo Funcionário"}</h1>
@@ -222,7 +232,7 @@ export default function FuncionarioForm() {
 
         <div className="pf-card">
           <div className="pf-card-header">
-            <div className="pf-card-icon">👤</div>
+            <div className="pf-card-icon"><IconUsers /></div>
             <div>
               <h2>{isEdit ? "Editar Funcionário" : "Cadastro de Funcionário"}</h2>
               <p>{isEdit ? `Editando funcionário #${id}` : "Preencha os campos do novo funcionário"}</p>
@@ -230,14 +240,14 @@ export default function FuncionarioForm() {
           </div>
           
           {loading ? (
-            <div className="pf-loading">⏳ Carregando dados do funcionário...</div>
+            <div className="pf-loading"><IconClock style={{ width: 16, height: 16, marginRight: 8 }} /> Carregando dados do funcionário...</div>
           ) : (
             <div className="pf-form">
               <div className="pf-section-title">Dados Pessoais</div>
               <div className="pf-grid">
                 <div className="pf-field pf-full">
                   <label>Nome *</label>
-                  <input maxLength={100} value={form.nome} onChange={e => setField("nome", e.target.value)} placeholder="Ex: Carlos Eduardo" />
+                  <input value={form.nome} onChange={e => setField("nome", e.target.value)} placeholder="Ex: Carlos Eduardo" />
                 </div>
                 <div className="pf-field">
                   <label>Cargo *</label>
@@ -249,8 +259,7 @@ export default function FuncionarioForm() {
                 <div className="pf-field">
                   <label>Salário *</label>
                   <input 
-                    type="text"
-                    maxLength={12}
+                    type="text" 
                     value={form.salario} 
                     onChange={e => setField("salario", e.target.value)} 
                     placeholder="Ex: 4500.00" 
@@ -259,8 +268,7 @@ export default function FuncionarioForm() {
                 <div className="pf-field">
                   <label>% Comissão</label>
                   <input 
-                    type="text"
-                    maxLength={7}
+                    type="text" 
                     value={form.percentual_comissao} 
                     onChange={e => setField("percentual_comissao", e.target.value)} 
                     placeholder="Ex: 5.00" 
@@ -280,8 +288,7 @@ export default function FuncionarioForm() {
                 <div className="pf-field">
                   <label>Usuário {!isEdit && "*"}</label>
                   <input 
-                    type="text"
-                    maxLength={50}
+                    type="text" 
                     value={form.usuario} 
                     onChange={e => setField("usuario", e.target.value)} 
                     placeholder="Nome de usuário para login"
@@ -291,8 +298,7 @@ export default function FuncionarioForm() {
                 <div className="pf-field">
                   <label>Senha {!isEdit && "*"}</label>
                   <input 
-                    type="password"
-                    maxLength={50}
+                    type="password" 
                     value={form.senha} 
                     onChange={e => setField("senha", e.target.value)} 
                     placeholder={isEdit ? "Deixe em branco para não alterar" : "Senha de acesso"}
@@ -321,7 +327,7 @@ export default function FuncionarioForm() {
         onClick={handleCloseModal}
       >
         <div className="confirm-modal" onClick={e => e.stopPropagation()}>
-          <div className="danger-icon">🗑️</div>
+          <div className="danger-icon"><IconTrash /></div>
           <h3>Remover este funcionário?</h3>
           <p>O funcionário será removido do sistema.</p>
           <div className="confirm-actions">

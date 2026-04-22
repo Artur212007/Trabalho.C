@@ -14,6 +14,8 @@ const IconCaixa      = () => <svg width="16" height="16" viewBox="0 0 24 24" fil
 const IconPagamento  = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>;
 const IconUsuarios   = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>;
 const IconLoja       = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>;
+const IconMovimentacao = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"> <polyline points="23 7 23 1 17 1"/><polyline points="1 17 1 23 7 23"/><line x1="23" y1="1" x2="16" y2="8"/> <line x1="1" y1="23" x2="8" y2="16"/> </svg>;
+const IconDespesa = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"> <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>;
 
 const navGroups = [
   {
@@ -33,7 +35,7 @@ const navGroups = [
   {
     title: "Serviços",
     items: [
-      { to: "/ordem-servico", icon: <IconOrdens />, label: "Ordens de Serviço" },
+      { to: "/ordem", icon: <IconOrdens />, label: "Ordens de Serviço" },
     ],
   },
   {
@@ -45,11 +47,13 @@ const navGroups = [
     ],
   },
   {
-    title: "Financeiro",
-    items: [
-      { to: "/caixa",      icon: <IconCaixa />,     label: "Fluxo de Caixa" },
-      { to: "/pagamentos", icon: <IconPagamento />, label: "Pagamentos" },
-    ],
+  title: "Financeiro",
+  items: [
+    { to: "/caixa",          icon: <IconCaixa />,        label: "Fluxo de Caixa" },
+    { to: "/movimentacoes",  icon: <IconMovimentacao />, label: "Movimentações" },
+    { to: "/despesas",       icon: <IconDespesa />,      label: "Despesas" },
+    { to: "/pagamentos",     icon: <IconPagamento />,    label: "Pagamentos" },
+  ],
   },
   {
     title: "Sistema",
@@ -63,6 +67,18 @@ const navGroups = [
 export function Sidebar() {
   const [open, setOpen] = useState(false);
   const location = useLocation();
+  const usuarioRaw = sessionStorage.getItem("usuario");
+  let usuario: any = null;
+
+  try {
+    usuario = usuarioRaw ? JSON.parse(usuarioRaw) : null;
+  } catch {
+    usuario = null;
+  }
+
+  const nomeUsuario = usuario?.nome || usuario?.usuario || "Admin";
+  const roleUsuario = usuario?.tipo === "cliente" ? "Cliente" : usuario?.tipo === "usuario" ? "Usuário" : "Administrador";
+  const avatar = nomeUsuario.trim().charAt(0).toUpperCase() || "A";
 
   const close = () => setOpen(false);
 
@@ -113,10 +129,10 @@ export function Sidebar() {
         {/* Footer */}
         <div className="sidebar-footer">
           <div className="sidebar-user">
-            <div className="sidebar-user-avatar">A</div>
+            <div className="sidebar-user-avatar">{avatar}</div>
             <div className="sidebar-user-info">
-              <div className="sidebar-user-name">Admin</div>
-              <div className="sidebar-user-role">Administrador</div>
+              <div className="sidebar-user-name">{nomeUsuario}</div>
+              <div className="sidebar-user-role">{roleUsuario}</div>
             </div>
           </div>
         </div>

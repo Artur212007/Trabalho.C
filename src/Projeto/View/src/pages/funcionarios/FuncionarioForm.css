@@ -174,8 +174,8 @@
   box-shadow: 0 4px 12px rgba(255,209,0,.4);
 }
 
-.btn-ghost { background: transparent; color: #71797E; border: 1.5px solid rgba(0,0,0,.12); }
-.btn-ghost:hover:not(:disabled) { border-color: #1A1A1A; color: #1A1A1A; }
+.btn-ghost { background: transparent; color: #111827 !important; border: 1.5px solid rgba(0,0,0,.12); }
+.btn-ghost:hover:not(:disabled) { border-color: #1A1A1A; color: #111827 !important; }
 
 .btn-danger { background: #FF4500; color: #fff; }
 .btn-danger:hover:not(:disabled) { background: #e03d00; transform: translateY(-1px); }
@@ -243,7 +243,7 @@
 .toast-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .toast-dot.ok  { background: #16A34A; }
 .toast-dot.err { background: #FF4500; }
-.toast-dot.del { background: #DC2626; }
+.toast-dot.del { background: #FF4500; }
 
 /* ── Responsivo ── */
 @media (max-width: 900px) {

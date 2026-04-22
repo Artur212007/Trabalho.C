@@ -1,6 +1,7 @@
 import { Sidebar } from "../../components/sidebar/";
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { IconAlert, IconBox, IconCart, IconCard, IconMoney, IconTool, IconUsers } from "../../components/ui/icons";
 import "./dashboard.css";
 
 const API = "http://localhost:3001/api"; // ✅ Adicionado /api
@@ -159,7 +160,7 @@ export function Dashboard() {
               marginBottom: "20px",
               fontSize: "14px"
             }}>
-              ⚠️ {erro}
+              <IconAlert style={{ width: 16, height: 16, marginRight: 8, verticalAlign: "-3px" }} /> {erro}
             </div>
           )}
 
@@ -170,7 +171,7 @@ export function Dashboard() {
             <div className="card" style={{"--card-accent":"#FFD100","--icon-bg":"#FFF9E6"} as React.CSSProperties}>
               <div className="card-header">
                 <h3>Vendas do Dia</h3>
-                <div className="card-icon">💰</div>
+                <div className="card-icon"><IconMoney /></div>
               </div>
               {carregando ? <p style={{color:"#9ca3af",fontSize:20}}>...</p> : (
                 <>
@@ -187,7 +188,7 @@ export function Dashboard() {
             <div className="card" style={{"--card-accent":"#3B82F6","--icon-bg":"#EFF6FF"} as React.CSSProperties}>
               <div className="card-header">
                 <h3>Ordens de Serviço</h3>
-                <div className="card-icon">🔧</div>
+                <div className="card-icon"><IconTool /></div>
               </div>
               {carregando ? <p style={{color:"#9ca3af",fontSize:20}}>...</p> : (
                 <>
@@ -202,7 +203,7 @@ export function Dashboard() {
             <div className="card" style={{"--card-accent":"#10B981","--icon-bg":"#ECFDF5"} as React.CSSProperties}>
               <div className="card-header">
                 <h3>Clientes</h3>
-                <div className="card-icon">👥</div>
+                <div className="card-icon"><IconUsers /></div>
               </div>
               {carregando ? <p style={{color:"#9ca3af",fontSize:20}}>...</p> : (
                 <>
@@ -217,7 +218,7 @@ export function Dashboard() {
             <div className="card" style={{"--card-accent":"#8B5CF6","--icon-bg":"#F5F3FF"} as React.CSSProperties}>
               <div className="card-header">
                 <h3>Produtos em Estoque</h3>
-                <div className="card-icon">📦</div>
+                <div className="card-icon"><IconBox /></div>
               </div>
               {carregando ? <p style={{color:"#9ca3af",fontSize:20}}>...</p> : (
                 <>
@@ -253,13 +254,13 @@ export function Dashboard() {
                 )}
                 {!carregando && (!dados || !dados.atividade_recente || dados.atividade_recente.length === 0) && (
                   <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:8,padding:"32px 0",color:"#9ca3af"}}>
-                    <span style={{fontSize:36}}>🛒</span>
+                    <span style={{fontSize:36}}><IconCart style={{ width: 36, height: 36 }} /></span>
                     <span style={{fontSize:14}}>Nenhuma venda registrada ainda.</span>
                   </div>
                 )}
                 {!carregando && dados && dados.atividade_recente && dados.atividade_recente.map((v) => (
                   <div className="order-item" key={v.id_venda}>
-                    <div className="order-avatar">🔩</div>
+                    <div className="order-avatar"><IconTool /></div>
                     <div className="order-info">
                       <div className="order-name">{v.nome_cliente ?? "Cliente"}</div>
                       <div className="order-desc" style={{maxWidth:200,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
@@ -282,11 +283,11 @@ export function Dashboard() {
               </div>
               <div className="quick-access">
                 {[
-                  { icon:"👤", label:"Novo Cliente",        sub:"Cadastrar cliente",    to:"/clientes/novo" },
-                  { icon:"📋", label:"Nova Ordem",          sub:"Criar O.S.",            to:"/ordens/novo" },
-                  { icon:"📦", label:"Gerenciar Produtos",  sub:"Estoque e preços",      to:"/produtos" },
-                  { icon:"💳", label:"Fluxo de Caixa",      sub:"Receitas e despesas",   to:"/caixa" },
-                  { icon:"👥", label:"Funcionários",        sub:"Gerenciar acessos",     to:"/funcionarios" },
+                  { icon:<IconUsers />, label:"Novo Cliente",        sub:"Cadastrar cliente",    to:"/clientes/novo" },
+                  { icon:<IconTool />, label:"Nova Ordem",          sub:"Criar O.S.",            to:"/ordens/novo" },
+                  { icon:<IconBox />, label:"Gerenciar Produtos",  sub:"Estoque e preços",      to:"/produtos" },
+                  { icon:<IconCard />, label:"Fluxo de Caixa",      sub:"Receitas e despesas",   to:"/caixa" },
+                  { icon:<IconUsers />, label:"Funcionários",        sub:"Gerenciar acessos",     to:"/funcionarios" },
                 ].map((q, i) => (
                   <Link to={q.to} className="quick-btn" key={i}>
                     <div className="quick-btn-icon">{q.icon}</div>

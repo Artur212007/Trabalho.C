@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Sidebar } from "../../components/sidebar";
-import { IconClock, IconArrowLeft } from "../../components/icons";
+import { IconClock } from "../../components/ui/icons";
 import "./PagamentosForm.css";
 
 const API = "http://localhost:3001/api";
@@ -28,7 +28,20 @@ interface PagamentoFormData {
   id_cliente: number;
 }
 
-const IconSave = () => <span style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>💾</span>;
+const IconArrowLeft = () => (
+  <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+    <line x1="19" y1="12" x2="5" y2="12"/>
+    <polyline points="12 19 5 12 12 5"/>
+  </svg>
+);
+
+const IconSave = () => (
+  <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+    <polyline points="17 21 17 13 7 13 7 21"/>
+    <polyline points="7 3 7 8 15 8"/>
+  </svg>
+);
 
 async function fetchWithAuth(url: string, options: RequestInit = {}) {
   const token = localStorage.getItem("token");
@@ -55,13 +68,6 @@ function useToast() {
   return { toast, show };
 }
 
-function formatPreco(value: string): { display: string; numeric: number } {
-  const digits = value.replace(/\D/g, "");
-  const numeric = Number(digits) / 100;
-  const display = numeric.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  return { display, numeric };
-}
-
 export default function PagamentosForm() {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -72,7 +78,6 @@ export default function PagamentosForm() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const { toast, show: showToast } = useToast();
-  const [valorDisplay, setValorDisplay] = useState("");
   
   const [formData, setFormData] = useState<PagamentoFormData>({
     valor: 0,
@@ -128,9 +133,8 @@ useEffect(() => {
         if (!res.ok) throw new Error('Erro ao carregar pagamento');
         const data = await res.json();
         
-        const valorNum = data.valor;
         setFormData({
-          valor: valorNum,
+          valor: data.valor,
           data_pagamento: data.data_pagamento ? data.data_pagamento.split('T')[0] : '',
           forma_pagamento: data.forma_pagamento,
           status: data.status,
@@ -138,7 +142,6 @@ useEffect(() => {
           id_venda: data.id_venda,
           id_cliente: data.id_cliente
         });
-        setValorDisplay(valorNum.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
       } catch (err) {
         console.error(err);
         showToast('Erro ao carregar pagamento', 'err');
@@ -155,9 +158,8 @@ useEffect(() => {
     const { name, value } = e.target;
     
     if (name === 'valor') {
-      const { display, numeric } = formatPreco(value);
-      setValorDisplay(display);
-      setFormData(prev => ({ ...prev, valor: numeric }));
+      const numValue = value === '' ? 0 : parseFloat(value);
+      setFormData(prev => ({ ...prev, [name]: isNaN(numValue) ? 0 : numValue }));
     } else if (name === 'id_cliente' || name === 'id_venda' || name === 'status') {
       setFormData(prev => ({ ...prev, [name]: parseInt(value) || 0 }));
     } else {
@@ -224,7 +226,7 @@ useEffect(() => {
         <Sidebar />
         <div className="pagamentos-page">
           <div className="empty-state">
-            <div className="big-icon"><IconClock /></div>
+            <div className="big-icon"><IconClock style={{ width: 32, height: 32 }} /></div>
             <p>Carregando pagamento...</p>
           </div>
         </div>
@@ -241,7 +243,7 @@ useEffect(() => {
             Pagamentos <span>{isEditing ? 'Editar Pagamento' : 'Novo Pagamento'}</span>
           </div>
           <div className="p-topbar-actions">
-            <button className="btn btn-ghost" onClick={() => navigate('/pagamentos')}>
+            <button className="btn btn-back" onClick={() => navigate('/pagamentos')}>
               <IconArrowLeft /> Voltar
             </button>
           </div>
@@ -279,7 +281,6 @@ useEffect(() => {
                     name="data_pagamento"
                     value={formData.data_pagamento}
                     onChange={handleChange}
-                    max="2026-04-11"
                     required
                   />
                 </div>
@@ -288,13 +289,13 @@ useEffect(() => {
                 <div className="form-group">
                   <label htmlFor="valor">Valor (R$) *</label>
                   <input
-                    type="text"
+                    type="number"
                     id="valor"
                     name="valor"
-                    maxLength={12}
-                    value={valorDisplay}
+                    value={formData.valor}
                     onChange={handleChange}
-                    placeholder="0,00"
+                    step="0.01"
+                    min="0.01"
                     required
                   />
                 </div>
@@ -357,7 +358,6 @@ useEffect(() => {
                   <textarea
                     id="descricao"
                     name="descricao"
-                    maxLength={150}
                     value={formData.descricao}
                     onChange={handleChange}
                     rows={3}
