@@ -1,11 +1,14 @@
-const router = require('express').Router();
-const db     = require('../db');
-const auth   = require('../middleware/Auth');
-const { q }  = require('../helpers/db');
+const router    = require('express').Router();
+const db        = require('../db');
+const auth      = require('../middleware/Auth');
+const permissao = require('../middleware/permissao');
+const { q }     = require('../helpers/db');
 const { err400, err404, err500, ok } = require('../helpers/Response');
 
-// ── ESTATÍSTICAS ──────────────────────────────────────────────────────────────
-router.get('/estatisticas', auth, async (req, res) => {
+const pVendedor = permissao(1, 2, 3);
+
+// ── ESTATÍSTICAS — só admin e gerente ────────────────────────────────────────
+router.get('/estatisticas', auth, permissao(1, 2), async (req, res) => {
   const fmts = {
     dia: ['DATE(data_venda)', '%d/%m/%Y'],
     mes: ['DATE_FORMAT(data_venda,"%Y-%m")', '%m/%Y'],
@@ -26,7 +29,7 @@ router.get('/estatisticas', auth, async (req, res) => {
 });
 
 // ── VENDAS POR CLIENTE ────────────────────────────────────────────────────────
-router.get('/cliente/:id', auth, async (req, res) => {
+router.get('/cliente/:id', auth, pVendedor, async (req, res) => {
   try {
     res.json(await q(
       `SELECT v.id_venda,v.valor_total,v.data_venda,v.status,f.nome AS vendedor_nome
@@ -37,8 +40,8 @@ router.get('/cliente/:id', auth, async (req, res) => {
   } catch (e) { err500(res, e); }
 });
 
-// ── VENDAS POR PERÍODO ────────────────────────────────────────────────────────
-router.get('/periodo', auth, async (req, res) => {
+// ── VENDAS POR PERÍODO — só admin e gerente ───────────────────────────────────
+router.get('/periodo', auth, permissao(1, 2), async (req, res) => {
   const { data_inicio, data_fim } = req.query;
   if (!data_inicio || !data_fim) return err400(res, 'data_inicio e data_fim obrigatórias');
   try {
@@ -54,23 +57,27 @@ router.get('/periodo', auth, async (req, res) => {
   } catch (e) { err500(res, e); }
 });
 
-// ── LISTAR ────────────────────────────────────────────────────────────────────
-router.get('/', auth, async (req, res) => {
+// ── LISTAR — vendedor vê só as próprias vendas ────────────────────────────────
+router.get('/', auth, pVendedor, async (req, res) => {
   try {
-    res.json(await q(
-      `SELECT v.id_venda,v.valor_total,v.data_venda,v.status,
-              c.nome AS cliente_nome,c.id_cliente,
-              f.nome AS vendedor_nome,f.id_funcionario AS vendedor_id
-       FROM venda v
-       LEFT JOIN cliente c ON c.id_cliente=v.id_cliente
-       LEFT JOIN funcionario f ON f.id_funcionario=v.id_vendedor
-       ORDER BY v.data_venda DESC`
-    ));
+    const isVendedor = req.user.nivel === 3;
+    const sql = `
+      SELECT v.id_venda,v.valor_total,v.data_venda,v.status,
+             c.nome AS cliente_nome,c.id_cliente,
+             f.nome AS vendedor_nome,f.id_funcionario AS vendedor_id
+      FROM venda v
+      LEFT JOIN cliente c ON c.id_cliente=v.id_cliente
+      LEFT JOIN funcionario f ON f.id_funcionario=v.id_vendedor
+      ${isVendedor ? 'WHERE v.id_vendedor = ?' : ''}
+      ORDER BY v.data_venda DESC
+    `;
+    const params = isVendedor ? [req.user.id] : [];
+    res.json(await q(sql, params));
   } catch (e) { err500(res, e); }
 });
 
 // ── BUSCAR POR ID ─────────────────────────────────────────────────────────────
-router.get('/:id', auth, async (req, res) => {
+router.get('/:id', auth, pVendedor, async (req, res) => {
   try {
     const [venda, itens] = await Promise.all([
       q(`SELECT v.*,c.nome AS cliente_nome,c.cpf_cnpj,c.telefone,f.nome AS vendedor_nome,f.id_funcionario AS vendedor_id
@@ -80,16 +87,27 @@ router.get('/:id', auth, async (req, res) => {
          FROM item_venda iv LEFT JOIN produto p ON p.id_produto=iv.id_produto WHERE iv.id_venda=?`, [req.params.id]),
     ]);
     if (!venda.length) return err404(res, 'Venda não encontrada');
+
+    // Vendedor só pode ver suas próprias vendas
+    if (req.user.nivel === 3 && venda[0].vendedor_id !== req.user.id) {
+      return res.status(403).json({ error: 'Acesso negado' });
+    }
+
     res.json({ ...venda[0], itens });
   } catch (e) { err500(res, e); }
 });
 
 // ── CRIAR ─────────────────────────────────────────────────────────────────────
-router.post('/', auth, async (req, res) => {
+router.post('/', auth, pVendedor, async (req, res) => {
   const { id_cliente, id_vendedor, itens, valor_total, desconto } = req.body;
   if (!id_vendedor)    return err400(res, 'Vendedor é obrigatório');
   if (!id_cliente)     return err400(res, 'Cliente é obrigatório');
   if (!itens?.length)  return err400(res, 'Adicione pelo menos um produto');
+
+  // Vendedor só pode registrar venda para ele mesmo
+  if (req.user.nivel === 3 && id_vendedor !== req.user.id) {
+    return res.status(403).json({ error: 'Você só pode registrar vendas para você mesmo' });
+  }
 
   try {
     const [cliente] = await q(`SELECT id_cliente,nome FROM cliente WHERE id_cliente=? AND ativo=1`, [id_cliente]);
@@ -130,8 +148,8 @@ router.post('/', auth, async (req, res) => {
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
-// ── CANCELAR ──────────────────────────────────────────────────────────────────
-router.put('/:id/cancelar', auth, async (req, res) => {
+// ── CANCELAR — só admin e gerente ────────────────────────────────────────────
+router.put('/:id/cancelar', auth, permissao(1, 2), async (req, res) => {
   const { id } = req.params;
   try {
     const [venda] = await q(`SELECT id_venda,status FROM venda WHERE id_venda=?`, [id]);
@@ -155,12 +173,11 @@ router.put('/:id/cancelar', auth, async (req, res) => {
   } catch (e) { err500(res, e); }
 });
 
-// ── EXCLUIR ───────────────────────────────────────────────────────────────────
-router.delete('/:id', auth, async (req, res) => {
+// ── EXCLUIR — só admin ────────────────────────────────────────────────────────
+router.delete('/:id', auth, permissao(1), async (req, res) => {
   try {
     const [venda] = await q(`SELECT id_venda FROM venda WHERE id_venda=?`, [req.params.id]);
     if (!venda) return err404(res, 'Venda não encontrada');
-    if (req.user.nivel !== 1) return res.status(403).json({ error: 'Apenas administradores podem excluir vendas' });
     await q(`UPDATE venda SET status=0 WHERE id_venda=?`, [req.params.id]);
     ok(res, { message: 'Venda cancelada com sucesso' });
   } catch (e) { err500(res, e); }

@@ -1,18 +1,22 @@
 const router   = require('express').Router();
 const bcrypt   = require('bcrypt');
 const auth     = require('../middleware/Auth');
+const permissao = require('../middleware/permissao'); // 👈 adicione
 const { q, buildSet } = require('../helpers/db');
 const { err400, err404, err500, ok } = require('../helpers/Response');
 
+// níveis que podem mexer com clientes: admin(1), gerente(2), vendedor(3)
+const pVendedor = permissao(1, 2, 3);
+
 // ── LISTAR ────────────────────────────────────────────────────────────────────
-router.get('/', auth, async (req, res) => {
+router.get('/', auth, pVendedor, async (req, res) => {  // 👈 adicionou pVendedor
   try {
     res.json(await q(`SELECT id_cliente,nome,cpf_cnpj,telefone,email,\`endereço\` AS endereco,ativo,usuario,nivel_acesso FROM cliente WHERE ativo=1 ORDER BY nome`));
   } catch (e) { err500(res, e); }
 });
 
 // ── BUSCAR POR ID ─────────────────────────────────────────────────────────────
-router.get('/:id', auth, async (req, res) => {
+router.get('/:id', auth, pVendedor, async (req, res) => {  // 👈
   try {
     const r = await q(
       `SELECT id_cliente,nome,cpf_cnpj,telefone,email,\`endereço\` AS endereco,ativo,usuario,nivel_acesso FROM cliente WHERE id_cliente=?`,
@@ -23,7 +27,7 @@ router.get('/:id', auth, async (req, res) => {
 });
 
 // ── CRIAR ─────────────────────────────────────────────────────────────────────
-router.post('/', auth, async (req, res) => {
+router.post('/', auth, pVendedor, async (req, res) => {  // 👈
   const { nome, cpf_cnpj, telefone, email, endereco, usuario, senha, nivel_acesso } = req.body;
   if (!nome || !usuario || !senha) return err400(res, 'Campos obrigatórios: nome, usuario, senha');
 
@@ -44,7 +48,7 @@ router.post('/', auth, async (req, res) => {
 });
 
 // ── ATUALIZAR ─────────────────────────────────────────────────────────────────
-router.put('/:id', auth, async (req, res) => {
+router.put('/:id', auth, pVendedor, async (req, res) => {  // 👈
   const { id } = req.params;
   try {
     const exists = await q(`SELECT id_cliente FROM cliente WHERE id_cliente=?`, [id]);
@@ -61,7 +65,8 @@ router.put('/:id', auth, async (req, res) => {
 });
 
 // ── EXCLUIR / DESATIVAR ───────────────────────────────────────────────────────
-router.delete('/:id', auth, async (req, res) => {
+// Vendedor NÃO pode excluir — apenas admin(1) e gerente(2)
+router.delete('/:id', auth, permissao(1, 2), async (req, res) => {  // 👈 só admin e gerente
   const { id } = req.params;
   try {
     const exists = await q(`SELECT id_cliente FROM cliente WHERE id_cliente=?`, [id]);
