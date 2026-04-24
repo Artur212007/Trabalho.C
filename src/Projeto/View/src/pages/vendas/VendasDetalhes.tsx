@@ -167,8 +167,8 @@ export default function VendasDetalhes() {
               </div>
             </article>
 
-            <article className="vd-summary-card">
-              <div className="vd-summary-icon"><IconUsers /></div>
+            <article className="vd-summary-card vd-vendedor-card">
+              <div className="vd-summary-icon vd-vendedor-icon"><IconUsers /></div>
               <div>
                 <span>Vendedor</span>
                 <strong>{venda.vendedor_nome}</strong>

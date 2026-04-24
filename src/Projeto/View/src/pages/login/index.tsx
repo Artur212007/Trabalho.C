@@ -2,8 +2,18 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
-import { IconAlert } from "../../components/ui/icons";
+import { IconAlert, IconEye } from "../../components/ui/icons";
 import "./login.css";
+
+const IconEyeOff = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M10.58 10.58A3 3 0 0 0 13.42 13.42" />
+    <path d="M9.88 4.24A11 11 0 0 1 12 4c7 0 11 8 11 8a20.9 20.9 0 0 1-5.17 5.74" />
+    <path d="M6.1 6.1C3.2 8.28 1 12 1 12s4 8 11 8a10.9 10.9 0 0 0 5.2-1.3" />
+    <path d="M1 1l22 22" />
+    <path d="M8.71 8.71a4 4 0 0 0 5.66 5.66" />
+  </svg>
+);
 
 async function autenticarComBackend(usuario: string, senha: string) {
   const response = await fetch("http://localhost:3001/api/login", {
@@ -26,6 +36,7 @@ async function autenticarComBackend(usuario: string, senha: string) {
 export function Login() {
   const [usuario, setUsuario] = useState("");
   const [senha, setSenha] = useState("");
+  const [mostrarSenha, setMostrarSenha] = useState(false);
   const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(false);
   const navigate = useNavigate();
@@ -89,13 +100,24 @@ export function Login() {
             <div className="label">
               <label>Senha</label>
             </div>
-            <Input
-              type="password"
-              placeholder="Digite sua senha"
-              value={senha}
-              onChange={(e) => setSenha(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-            />
+            <div className="password-field">
+              <Input
+                type={mostrarSenha ? "text" : "password"}
+                placeholder="Digite sua senha"
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+              />
+              <button
+                type="button"
+                className="password-toggle"
+                onClick={() => setMostrarSenha(v => !v)}
+                aria-label={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
+                title={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
+              >
+                {mostrarSenha ? <IconEyeOff /> : <IconEye />}
+              </button>
+            </div>
 
             {erro && (
               <p style={{

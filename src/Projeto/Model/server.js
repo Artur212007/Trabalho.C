@@ -24,6 +24,7 @@ app.use('/api/caixa',      require('./routes/Caixa'));
 app.use('/api/pagamentos', require('./routes/Pagamentos'));
 app.use('/api/despesas',   require('./routes/Despesas'));
 app.use('/api/movimentacoes', require('./routes/Movimentacoes'));
+app.use('/api/loja',       require('./routes/Loja'));
 
 // ── ERRO GLOBAL ───────────────────────────────────────────────────────────────
 app.use((err, req, res, next) => {

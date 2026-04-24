@@ -127,7 +127,9 @@ export default function ProdutoForm() {
 
   async function handleSave() {
   if (!form.nome.trim()) { showToast("Informe o nome do produto.", "err"); return; }
+  if (!form.preco_custo || form.preco_custo <= 0) { showToast("Informe o preço de custo do produto.", "err"); return; }
   if (!form.preco_venda || form.preco_venda <= 0) { showToast("Informe o preço de venda do produto.", "err"); return; }
+  if (!form.id_fornecedor || form.id_fornecedor <= 0) { showToast("Informe o fornecedor do produto.", "err"); return; }
   
   setSaving(true);
   
@@ -142,32 +144,35 @@ export default function ProdutoForm() {
     id_fornecedor: form.id_fornecedor,
   };
   
-  // 🔍 ADICIONE ESTES LOGS
-  console.log('📤 Enviando dados:', body);
-  console.log('🔑 Token:', getToken());
-  
   try {
     const url = isEdit ? `${API}/produtos/${id}` : `${API}/produtos`;
     const method = isEdit ? "PUT" : "POST";
-    
-    console.log(`📍 ${method} para:`, url);
-    
+
     const res = await fetchWithAuth(url, { method, body: JSON.stringify(body) });
-    
-    // 🔍 LOG DA RESPOSTA
-    console.log('📥 Status:', res.status);
-    const errorText = await res.text();
-    console.log('📥 Resposta:', errorText);
-    
+
     if (!res.ok) {
-      throw new Error(errorText || 'Erro ao salvar');
+      const contentType = res.headers.get("content-type") || "";
+      let errorMessage = "Erro ao salvar";
+
+      if (contentType.includes("application/json")) {
+        const errorData = await res.json().catch(() => ({}));
+        errorMessage = errorData.error || errorData.erro || errorMessage;
+      } else {
+        errorMessage = await res.text();
+      }
+
+      if (res.status === 401) {
+        errorMessage = "Sessão expirada ou inválida. Faça login novamente.";
+      }
+
+      throw new Error(errorMessage || 'Erro ao salvar');
     }
     
     showToast(isEdit ? "Produto atualizado com sucesso!" : "Produto cadastrado com sucesso!");
     setTimeout(() => navigate("/produtos"), 1200);
   } catch (err) {
     console.error('❌ Erro completo:', err);
-    showToast("Erro ao salvar. Verifique os dados.", "err");
+    showToast(err instanceof Error ? err.message : "Erro ao salvar. Verifique os dados.", "err");
   } finally {
     setSaving(false);
   }

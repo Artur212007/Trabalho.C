@@ -1,80 +1,120 @@
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import PrivateRoute from "./components/PrivateRoute";
 
-import { Login }       from "./pages/login";
-import { Home }        from "./pages/home/home";
-import { SignUp }      from "./pages/sign-up";
-import { Dashboard }   from "./pages/dashboard";
-import Produtos        from "./pages/produtos/Produtos";
-import ProdutoForm     from "./pages/produtos/ProdutoForm";
-import Clientes        from "./pages/clientes/Clientes";
-import ClienteForm     from "./pages/clientes/ClienteForm";
-import Loja            from "./pages/loja/Loja";
-import Fornecedores    from "./pages/fornecedores/fornecedores";
-import FornecedorForm  from "./pages/fornecedores/FornecedorForm";
-import Funcionarios    from "./pages/funcionarios/funcionarios";
-import FuncionarioForm from "./pages/funcionarios/FuncionarioForm";
-import Vendas          from "./pages/vendas/vendas";
-import VendasForm      from "./pages/vendas/VendasForm";
+import { Login }        from "./pages/login";
+import { Home }         from "./pages/home/home";
+import { SignUp }       from "./pages/sign-up";
+import { Dashboard }    from "./pages/dashboard";
+import Produtos         from "./pages/produtos/Produtos";
+import ProdutoForm      from "./pages/produtos/ProdutoForm";
+import Clientes         from "./pages/clientes/Clientes";
+import ClienteForm      from "./pages/clientes/ClienteForm";
+import Loja             from "./pages/loja/Loja";
+import Fornecedores     from "./pages/fornecedores/fornecedores";
+import FornecedorForm   from "./pages/fornecedores/FornecedorForm";
+import Funcionarios     from "./pages/funcionarios/funcionarios";
+import FuncionarioForm  from "./pages/funcionarios/FuncionarioForm";
+import Vendas           from "./pages/vendas/vendas";
+import VendasForm       from "./pages/vendas/VendasForm";
 import VendasDetalhes   from "./pages/vendas/VendasDetalhes";
-import Ordem         from "./pages/OrdemServico/OrdemServico";
-import OrdemForm    from "./pages/OrdemServico/OrdemServicoForm";
-import Orcamento       from "./pages/orcamentos/Orcamento";
-import OrcamentoForm   from "./pages/orcamentos/OrcamentoForm";
-import Caixa      from "./pages/FluxoCaixa/FluxoCaixa";
-import CaixaForm   from "./pages/FluxoCaixa/FluxoCaixaForm";
-import Pagamentos      from "./pages/Pagamentos/Pagamentos";
+import Ordem            from "./pages/OrdemServico/OrdemServico";
+import OrdemForm        from "./pages/OrdemServico/OrdemServicoForm";
+import Orcamento        from "./pages/orcamentos/Orcamento";
+import OrcamentoForm    from "./pages/orcamentos/OrcamentoForm";
+import Caixa            from "./pages/FluxoCaixa/FluxoCaixa";
+import CaixaForm        from "./pages/FluxoCaixa/FluxoCaixaForm";
+import Pagamentos       from "./pages/Pagamentos/Pagamentos";
 import PagamentosForm   from "./pages/Pagamentos/PagamentosForm";
-import Movimentacoes      from "./pages/movimentacoes/movimentacoes";
-import Despesas      from "./pages/despesas/Despesas";
-import DespesasForm   from "./pages/despesas/DespesasForm";
-import Usuarios       from "./pages/usuarios/Usuarios";
+import Movimentacoes    from "./pages/movimentacoes/movimentacoes";
+import Despesas         from "./pages/despesas/Despesas";
+import DespesasForm     from "./pages/despesas/DespesasForm";
+import Usuarios         from "./pages/usuarios/Usuarios";
 
 import "./index.css";
+
+// ── NÍVEIS DE ACESSO ──────────────────────────────────────────────────────────
+// 1=Admin  2=Gerente  3=Vendedor  4=Técnico  5=Caixa  6=Cliente
+const ADMIN    = [1];
+const GERENTE  = [1, 2];
+const VENDEDOR = [1, 2, 3];
+const TECNICO  = [1, 2, 4];
+const CAIXA    = [1, 2, 5];
 
 const root = document.getElementById("root");
 
 createRoot(root!).render(
   <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
     <Routes>
-      <Route path="/"                        element={<Login />} />
-      <Route path="/home"                    element={<Home />} />
-      <Route path="/loja"                    element={<Loja />} />
-      <Route path="/sign-up"                 element={<SignUp />} />
-      <Route path="/dashboard"               element={<Dashboard />} />
-      <Route path="/produtos"                element={<Produtos />} />
-      <Route path="/produtos/novo"           element={<ProdutoForm />} />
-      <Route path="/produtos/editar/:id"     element={<ProdutoForm />} />
-      <Route path="/clientes"                element={<Clientes />} />
-      <Route path="/clientes/novo"           element={<ClienteForm />} />
-      <Route path="/clientes/editar/:id"     element={<ClienteForm />} />
-      <Route path="/fornecedores"            element={<Fornecedores />} />
-      <Route path="/fornecedores/novo"       element={<FornecedorForm />} />
-      <Route path="/fornecedores/editar/:id" element={<FornecedorForm />} />
-      <Route path="/funcionarios"            element={<Funcionarios />} />
-      <Route path="/funcionarios/novo"       element={<FuncionarioForm />} />
-      <Route path="/funcionarios/editar/:id" element={<FuncionarioForm />} />
-      <Route path="/vendas"                  element={<Vendas />} />
-      <Route path="/vendas/novo"             element={<VendasForm />} />
-      <Route path="/vendas/editar/:id"       element={<VendasForm />} />
-      <Route path="/vendas/:id"              element={<VendasDetalhes />} />
-      <Route path="/ordem"                   element={<Ordem />} />
-      <Route path="/ordem/novo"              element={<OrdemForm />} />
-      <Route path="/ordem/editar/:id"        element={<OrdemForm />} />
-      <Route path="/orcamentos"              element={<Orcamento />} />
-      <Route path="/orcamentos/novo"         element={<OrcamentoForm />} />
-      <Route path="/orcamentos/editar/:id"   element={<OrcamentoForm />} />
-      <Route path="/caixa"                   element={<Caixa />} />
-      <Route path="/caixa/novo"              element={<CaixaForm />} />
-      <Route path="/caixa/editar/:id"        element={<CaixaForm />} />
-      <Route path="/pagamentos"              element={<Pagamentos />} />
-      <Route path="/pagamentos/novo"         element={<PagamentosForm />} />
-      <Route path="/pagamentos/editar/:id"   element={<PagamentosForm />} />
-      <Route path="/despesas"                element={<Despesas />} />
-      <Route path="/despesas/novo"           element={<DespesasForm/>} />
-      <Route path="/despesas/editar/:id"     element={<DespesasForm />} />
-      <Route path="/movimentacoes"           element={<Movimentacoes/>} />
-      <Route path="/usuarios"                element={<Usuarios />} />
+
+      {/* ── PÚBLICAS ── */}
+      <Route path="/"        element={<Login />} />
+      <Route path="/sign-up" element={<SignUp />} />
+      <Route path="/loja"    element={<Loja />} />
+
+      {/* ── GERAL — qualquer funcionário logado ── */}
+      <Route path="/home"      element={<PrivateRoute element={<Home />} />} />
+
+      {/* ── DASHBOARD — admin e gerente ── */}
+      <Route path="/dashboard" element={<PrivateRoute element={<Dashboard />}   niveis={GERENTE} />} />
+
+      {/* ── CLIENTES — vendedor pode tudo menos excluir (bloqueio no backend) ── */}
+      <Route path="/clientes"            element={<PrivateRoute element={<Clientes />}    niveis={VENDEDOR} />} />
+      <Route path="/clientes/novo"       element={<PrivateRoute element={<ClienteForm />} niveis={VENDEDOR} />} />
+      <Route path="/clientes/editar/:id" element={<PrivateRoute element={<ClienteForm />} niveis={VENDEDOR} />} />
+
+      {/* ── VENDAS — vendedor pode ver e criar, editar só gerente+ ── */}
+      <Route path="/vendas"              element={<PrivateRoute element={<Vendas />}         niveis={VENDEDOR} />} />
+      <Route path="/vendas/novo"         element={<PrivateRoute element={<VendasForm />}     niveis={VENDEDOR} />} />
+      <Route path="/vendas/editar/:id"   element={<PrivateRoute element={<VendasForm />}     niveis={GERENTE} />} />
+      <Route path="/vendas/:id"          element={<PrivateRoute element={<VendasDetalhes />} niveis={VENDEDOR} />} />
+
+      {/* ── PRODUTOS — vendedor só visualiza (sem novo/editar) ── */}
+      <Route path="/produtos"            element={<PrivateRoute element={<Produtos />}    niveis={VENDEDOR} />} />
+      <Route path="/produtos/novo"       element={<PrivateRoute element={<ProdutoForm />} niveis={GERENTE} />} />
+      <Route path="/produtos/editar/:id" element={<PrivateRoute element={<ProdutoForm />} niveis={GERENTE} />} />
+
+      {/* ── FORNECEDORES — só gerente+ ── */}
+      <Route path="/fornecedores"            element={<PrivateRoute element={<Fornecedores />}    niveis={GERENTE} />} />
+      <Route path="/fornecedores/novo"       element={<PrivateRoute element={<FornecedorForm />} niveis={GERENTE} />} />
+      <Route path="/fornecedores/editar/:id" element={<PrivateRoute element={<FornecedorForm />} niveis={GERENTE} />} />
+
+      {/* ── FUNCIONÁRIOS — só admin ── */}
+      <Route path="/funcionarios"            element={<PrivateRoute element={<Funcionarios />}    niveis={ADMIN} />} />
+      <Route path="/funcionarios/novo"       element={<PrivateRoute element={<FuncionarioForm />} niveis={ADMIN} />} />
+      <Route path="/funcionarios/editar/:id" element={<PrivateRoute element={<FuncionarioForm />} niveis={ADMIN} />} />
+
+      {/* ── ORDEM DE SERVIÇO — técnico pode ver e criar ── */}
+      <Route path="/ordem"            element={<PrivateRoute element={<Ordem />}    niveis={TECNICO} />} />
+      <Route path="/ordem/novo"       element={<PrivateRoute element={<OrdemForm />} niveis={TECNICO} />} />
+      <Route path="/ordem/editar/:id" element={<PrivateRoute element={<OrdemForm />} niveis={TECNICO} />} />
+
+      {/* ── ORÇAMENTOS — gerente+ ── */}
+      <Route path="/orcamentos"            element={<PrivateRoute element={<Orcamento />}    niveis={GERENTE} />} />
+      <Route path="/orcamentos/novo"       element={<PrivateRoute element={<OrcamentoForm />} niveis={GERENTE} />} />
+      <Route path="/orcamentos/editar/:id" element={<PrivateRoute element={<OrcamentoForm />} niveis={GERENTE} />} />
+
+      {/* ── CAIXA — caixa e gerente+ ── */}
+      <Route path="/caixa"            element={<PrivateRoute element={<Caixa />}    niveis={CAIXA} />} />
+      <Route path="/caixa/novo"       element={<PrivateRoute element={<CaixaForm />} niveis={CAIXA} />} />
+      <Route path="/caixa/editar/:id" element={<PrivateRoute element={<CaixaForm />} niveis={CAIXA} />} />
+
+      {/* ── PAGAMENTOS — caixa e gerente+ ── */}
+      <Route path="/pagamentos"            element={<PrivateRoute element={<Pagamentos />}    niveis={CAIXA} />} />
+      <Route path="/pagamentos/novo"       element={<PrivateRoute element={<PagamentosForm />} niveis={CAIXA} />} />
+      <Route path="/pagamentos/editar/:id" element={<PrivateRoute element={<PagamentosForm />} niveis={CAIXA} />} />
+
+      {/* ── DESPESAS — gerente+ ── */}
+      <Route path="/despesas"            element={<PrivateRoute element={<Despesas />}    niveis={GERENTE} />} />
+      <Route path="/despesas/novo"       element={<PrivateRoute element={<DespesasForm />} niveis={GERENTE} />} />
+      <Route path="/despesas/editar/:id" element={<PrivateRoute element={<DespesasForm />} niveis={GERENTE} />} />
+
+      {/* ── MOVIMENTAÇÕES — gerente+ ── */}
+      <Route path="/movimentacoes" element={<PrivateRoute element={<Movimentacoes />} niveis={GERENTE} />} />
+
+      {/* ── USUÁRIOS — só admin ── */}
+      <Route path="/usuarios" element={<PrivateRoute element={<Usuarios />} niveis={ADMIN} />} />
+
     </Routes>
-  </BrowserRouter>,
+  </BrowserRouter>
 );

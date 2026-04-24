@@ -254,3 +254,17 @@
     font-size: 14px;
   }
 }
+
+.sidebar-logout {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--sidebar-text-muted, #71717a);
+  padding: 4px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+}
+.sidebar-logout:hover {
+  color: #ef4444;
+}

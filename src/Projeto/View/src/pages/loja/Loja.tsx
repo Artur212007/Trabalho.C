@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { IconTrash } from "../../components/ui/icons";
 import "../loja/Loja.css";
 
-const API = "http://localhost:3001";
+const API = "http://localhost:3001/api";
 const PEXELS_KEY = "BSrkrC9lc5Dhliaw5oIYXEYfpWyD767FlGl9nYFKhomFmtSIL2Ypz2GT";
 
 type Tipo = 1 | 2 | 3;
@@ -27,6 +28,8 @@ interface ItemCarrinho {
   quantidade: number;
 }
 
+const CARRINHO_STORAGE_KEY = "loja:carrinho-salvo";
+
 function fmt(v: number) {
   return "R$ " + Number(v).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
@@ -50,13 +53,15 @@ function ProdutoCard({
   noCarrinho,
   onAdicionar,
   onAlterar,
+  onIrCarrinho,
 }: {
   p: Produto;
   idx: number;
   urgente: boolean;
   noCarrinho: number;
   onAdicionar: () => void;
-  onAlterar: (delta: number) => void;
+  onAlterar: (delta: number, maxQuantidade?: number) => void;
+  onIrCarrinho: () => void;
 }) {
   const [imgSrc, setImgSrc] = useState<string>("");
 
@@ -100,17 +105,33 @@ function ProdutoCard({
         <div className="lj-card-bottom">
           <span className="lj-card-preco">{fmt(p.preco_venda)}</span>
           {noCarrinho > 0 ? (
-            <div className="lj-qty">
-              <button onClick={() => onAlterar(-1)}>−</button>
-              <span>{noCarrinho}</span>
-              <button onClick={() => onAlterar(1)}>+</button>
+            <div className="lj-qty-wrap">
+              <div className="lj-qty">
+                <button onClick={() => onAlterar(-1)} type="button">−</button>
+                <span>{noCarrinho}</span>
+                <button
+                  onClick={() => onAlterar(1, p.quantidade_estoque)}
+                  type="button"
+                  disabled={noCarrinho >= p.quantidade_estoque}
+                  aria-label="Aumentar quantidade"
+                >
+                  +
+                </button>
+              </div>
+              {noCarrinho >= p.quantidade_estoque && (
+                <span className="lj-stock-limit">Estoque máximo atingido</span>
+              )}
             </div>
           ) : (
-            <button className="lj-add" onClick={onAdicionar}>
+            <button className="lj-add" onClick={onAdicionar} type="button">
               Adicionar
             </button>
           )}
         </div>
+
+        <button className="lj-go-cart" type="button" onClick={onIrCarrinho}>
+          Comprar
+        </button>
       </div>
     </div>
   );
@@ -128,6 +149,13 @@ export default function Loja() {
   const [carrinhoAberto, setCarrinhoAberto] = useState(false);
   const [menuAberto, setMenuAberto] = useState(false);
   const [pedidoFeito, setPedidoFeito] = useState(false);
+  const [itemParaExcluir, setItemParaExcluir] = useState<ItemCarrinho | null>(null);
+  const [confirmarSairAberto, setConfirmarSairAberto] = useState(false);
+  const [toast, setToast] = useState<{ msg: string; type: "ok" | "err"; visible: boolean }>({
+    msg: "",
+    type: "ok",
+    visible: false,
+  });
   const [scrolled, setScrolled] = useState(false);
   const produtosRef = useRef<HTMLElement>(null);
   const buscaInputRef = useRef<HTMLInputElement>(null);
@@ -135,30 +163,92 @@ export default function Loja() {
   const usuarioRaw = sessionStorage.getItem("usuario");
   const usuario = usuarioRaw ? JSON.parse(usuarioRaw) : null;
 
+  async function carregarProdutos() {
+    const response = await fetch(`${API}/loja/produtos`);
+    const data = await response.json();
+    const mapped = data
+      .filter((p: any) => p.quantidade_estoque > 0)
+      .map((p: any) => ({
+        id: p.id_produto,
+        nome: p.nome,
+        tipo: p.tipo as Tipo,
+        preco_venda: p.preco_venda / 100,
+        quantidade_estoque: p.quantidade_estoque,
+        garantia: p.garantia,
+      }));
+
+    setProdutos(mapped);
+  }
+
+  function mostrarToast(msg: string, type: "ok" | "err" = "ok") {
+    setToast({ msg, type, visible: true });
+    window.setTimeout(() => setToast(t => ({ ...t, visible: false })), 3500);
+  }
+
+  function salvarCarrinho(carrinhoAtual: ItemCarrinho[]) {
+    const carrinhoSerializado = carrinhoAtual.map(item => ({
+      produto: item.produto,
+      quantidade: item.quantidade,
+    }));
+    localStorage.setItem(CARRINHO_STORAGE_KEY, JSON.stringify(carrinhoSerializado));
+  }
+
+  function carregarCarrinhoSalvo(produtosDisponiveis: Produto[]) {
+    const carrinhoSalvo = localStorage.getItem(CARRINHO_STORAGE_KEY);
+    if (!carrinhoSalvo) return;
+
+    try {
+      const itensSalvos: ItemCarrinho[] = JSON.parse(carrinhoSalvo);
+      if (!Array.isArray(itensSalvos)) return;
+
+      const carrinhoReconstruido = itensSalvos
+        .map((item) => {
+          const produtoAtual = produtosDisponiveis.find(produto => produto.id === item.produto?.id);
+          if (!produtoAtual) return null;
+          return {
+            produto: produtoAtual,
+            quantidade: Math.min(Math.max(1, Number(item.quantidade ?? 1)), produtoAtual.quantidade_estoque),
+          };
+        })
+        .filter((item): item is ItemCarrinho => item !== null && item.quantidade > 0);
+
+      if (carrinhoReconstruido.length > 0) {
+        setCarrinho(carrinhoReconstruido);
+      }
+    } catch {
+      localStorage.removeItem(CARRINHO_STORAGE_KEY);
+    }
+  }
+
   useEffect(() => {
     if (!usuario) { navigate("/"); return; }
-    fetch(`${API}/produtos`)
-      .then(r => r.json())
-      .then(data => {
-        const mapped = data
-          .filter((p: any) => p.quantidade_estoque > 0)
-          .map((p: any) => ({
-            id: p.id_produto,
-            nome: p.nome,
-            tipo: p.tipo as Tipo,
-            preco_venda: p.preco_venda / 100,
-            quantidade_estoque: p.quantidade_estoque,
-            garantia: p.garantia,
-          }));
-        setProdutos(mapped);
-        setLoading(false);
-      })
+    carregarProdutos()
+      .then(() => setLoading(false))
       .catch(() => { setProdutos(MOCK_PRODUTOS); setLoading(false); });
 
     const onScroll = () => setScrolled(window.scrollY > 60);
+    const refreshProdutos = () => carregarProdutos().catch(() => undefined);
     window.addEventListener("scroll", onScroll);
-    return () => window.removeEventListener("scroll", onScroll);
+    const intervalId = window.setInterval(refreshProdutos, 15000);
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") refreshProdutos();
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
   }, []);
+
+  useEffect(() => {
+    if (produtos.length === 0) return;
+    carregarCarrinhoSalvo(produtos);
+  }, [produtos]);
+
+  useEffect(() => {
+    salvarCarrinho(carrinho);
+  }, [carrinho]);
 
   useEffect(() => {
     if (buscaAberta) setTimeout(() => buscaInputRef.current?.focus(), 50);
@@ -167,56 +257,113 @@ export default function Loja() {
   function adicionarAoCarrinho(produto: Produto) {
     setCarrinho(prev => {
       const existe = prev.find(i => i.produto.id === produto.id);
-      if (existe) return prev.map(i => i.produto.id === produto.id ? { ...i, quantidade: i.quantidade + 1 } : i);
+      if (existe) {
+        if (existe.quantidade >= produto.quantidade_estoque) return prev;
+        return prev.map(i => i.produto.id === produto.id ? { ...i, quantidade: i.quantidade + 1 } : i);
+      }
       return [...prev, { produto, quantidade: 1 }];
     });
   }
 
-  function removerDoCarrinho(id: number) {
-    setCarrinho(prev => prev.filter(i => i.produto.id !== id));
+  function abrirConfirmacaoRemocao(item: ItemCarrinho) {
+    setItemParaExcluir(item);
   }
 
-  function alterarQtd(id: number, delta: number) {
+  function confirmarRemocao() {
+    if (!itemParaExcluir) return;
+    const id = itemParaExcluir.produto.id;
+    setCarrinho(prev => prev.filter(i => i.produto.id !== id));
+    setItemParaExcluir(null);
+  }
+
+  function cancelarRemocao() {
+    setItemParaExcluir(null);
+  }
+
+  function alterarQtd(id: number, delta: number, maxQuantidade?: number) {
     setCarrinho(prev =>
-      prev.map(i => i.produto.id === id ? { ...i, quantidade: Math.max(1, i.quantidade + delta) } : i)
+      prev.map(i => {
+        if (i.produto.id !== id) return i;
+        const proximaQtd = i.quantidade + delta;
+        const quantidadeLimitada = typeof maxQuantidade === "number"
+          ? Math.min(Math.max(1, proximaQtd), maxQuantidade)
+          : Math.max(1, proximaQtd);
+        return { ...i, quantidade: quantidadeLimitada };
+      })
     );
   }
 
   async function finalizarPedido() {
-    const usuarioRaw = sessionStorage.getItem("usuario");
-    const usuario = usuarioRaw ? JSON.parse(usuarioRaw) : null;
-
     try {
-      await fetch(`${API}/api/venda`, {
+      const response = await fetch(`${API}/loja/comprar`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
-          id_cliente: usuario?.id ?? null,
           itens: carrinho.map(i => ({
             id_produto: i.produto.id,
             quantidade: i.quantidade,
-            valor_unitario: Math.round(i.produto.preco_venda * 100),
           })),
-          valor_total: Math.round((subtotal + frete) * 100),
         }),
       });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || "Não foi possível concluir a compra");
+      }
     } catch (e) {
-      console.warn("Erro ao salvar venda:", e);
+      console.warn("Erro ao salvar compra:", e);
+      mostrarToast(e instanceof Error ? e.message : "Não foi possível concluir a compra", "err");
+      return;
     }
 
     setCarrinho([]);
     setCarrinhoAberto(false);
     setPedidoFeito(true);
+    carregarProdutos().catch(() => undefined);
+    mostrarToast("Compra realizada com sucesso!", "ok");
     setTimeout(() => setPedidoFeito(false), 5000);
   }
 
   function sair() {
+    setConfirmarSairAberto(true);
+  }
+
+  function confirmarSaida() {
+    salvarCarrinho(carrinho);
     sessionStorage.removeItem("usuario");
+    setConfirmarSairAberto(false);
     navigate("/");
   }
 
+  function cancelarSaida() {
+    setConfirmarSairAberto(false);
+  }
+
   function scrollTo(id: string) {
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+    const alvo = document.getElementById(id);
+    if (!alvo) return;
+
+    const inicio = window.scrollY;
+    const destino = alvo.getBoundingClientRect().top + window.scrollY;
+    const distancia = destino - inicio;
+    const duracao = Math.min(700, Math.max(320, Math.abs(distancia) * 0.35));
+    const tempoInicio = performance.now();
+
+    const easeOutCubic = (valor: number) => 1 - Math.pow(1 - valor, 3);
+
+    const animar = (tempoAtual: number) => {
+      const progresso = Math.min((tempoAtual - tempoInicio) / duracao, 1);
+      const suavizado = easeOutCubic(progresso);
+      window.scrollTo(0, inicio + distancia * suavizado);
+
+      if (progresso < 1) {
+        window.requestAnimationFrame(animar);
+      }
+    };
+
+    window.requestAnimationFrame(animar);
     setMenuAberto(false);
   }
 
@@ -273,7 +420,11 @@ export default function Loja() {
             </button>
 
             <button className="lj-hamburger" onClick={() => setMenuAberto(v => !v)}>
-              <span/><span/><span/>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M6 7h12" />
+                <path d="M6 12h8" />
+                <path d="M6 17h12" />
+              </svg>
             </button>
           </div>
         </div>
@@ -323,15 +474,28 @@ export default function Loja() {
                     <span className="lj-ci-nome">{item.produto.nome}</span>
                     <span className="lj-ci-unit">{fmt(item.produto.preco_venda)}</span>
                     <div className="lj-ci-qty">
-                      <button onClick={() => alterarQtd(item.produto.id, -1)}>−</button>
+                      <button onClick={() => alterarQtd(item.produto.id, -1, item.produto.quantidade_estoque)} type="button">−</button>
                       <span>{item.quantidade}</span>
-                      <button onClick={() => alterarQtd(item.produto.id, 1)}>+</button>
+                      <button
+                        onClick={() => alterarQtd(item.produto.id, 1, item.produto.quantidade_estoque)}
+                        type="button"
+                        disabled={item.quantidade >= item.produto.quantidade_estoque}
+                        aria-label="Aumentar quantidade no carrinho"
+                      >
+                        +
+                      </button>
                     </div>
                   </div>
                   <div className="lj-ci-right">
                     <span className="lj-ci-total">{fmt(item.produto.preco_venda * item.quantidade)}</span>
-                    <button className="lj-ci-del" onClick={() => removerDoCarrinho(item.produto.id)}>
-                      <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    <button
+                      className="lj-ci-trash"
+                      onClick={() => abrirConfirmacaoRemocao(item)}
+                      type="button"
+                      aria-label="Remover produto do carrinho"
+                      title="Remover produto"
+                    >
+                      <IconTrash />
                     </button>
                   </div>
                 </div>
@@ -429,7 +593,7 @@ export default function Loja() {
             </div>
           )}
 
-          {!loading && produtosFiltrados.map((p, idx) => (
+          {!loading && produtosFiltrados.filter(p => p.quantidade_estoque > 0).map((p, idx) => (
             <ProdutoCard
               key={p.id}
               p={p}
@@ -437,7 +601,8 @@ export default function Loja() {
               urgente={p.quantidade_estoque <= 5}
               noCarrinho={qtdNoCarrinho(p.id)}
               onAdicionar={() => adicionarAoCarrinho(p)}
-              onAlterar={(delta) => alterarQtd(p.id, delta)}
+              onAlterar={(delta, maxQuantidade) => alterarQtd(p.id, delta, maxQuantidade)}
+              onIrCarrinho={() => setCarrinhoAberto(true)}
             />
           ))}
         </div>
@@ -508,14 +673,55 @@ export default function Loja() {
       </footer>
 
       {/* ─── TOAST ─── */}
-      {pedidoFeito && (
-        <div className="lj-toast">
+      {(pedidoFeito || toast.visible) && (
+        <div className={`lj-toast ${toast.visible ? toast.type : ""}`}>
           <div className="lj-toast-ok">
             <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
           </div>
           <div>
-            <strong>Pedido realizado com sucesso!</strong>
-            <span>Em breve entraremos em contato.</span>
+            <strong>{toast.visible ? toast.msg : "Pedido realizado com sucesso!"}</strong>
+            <span>{toast.visible ? "Verifique o carrinho e a vitrine atualizada." : "Em breve entraremos em contato."}</span>
+          </div>
+        </div>
+      )}
+
+      {itemParaExcluir && (
+        <div className="lj-confirm-overlay" onClick={cancelarRemocao}>
+          <div className="lj-confirm-modal" onClick={(e) => e.stopPropagation()}>
+            <span className="lj-confirm-kicker">Confirmação necessária</span>
+            <h3>Remover produto do carrinho?</h3>
+            <p>
+              Você está prestes a excluir <strong>{itemParaExcluir.produto.nome}</strong> do carrinho.
+              Esta ação remove o item imediatamente.
+            </p>
+            <div className="lj-confirm-actions">
+              <button type="button" className="lj-confirm-cancel" onClick={cancelarRemocao}>
+                Cancelar
+              </button>
+              <button type="button" className="lj-confirm-danger" onClick={confirmarRemocao}>
+                Excluir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmarSairAberto && (
+        <div className="lj-confirm-overlay" onClick={cancelarSaida}>
+          <div className="lj-confirm-modal lj-confirm-modal--logout" onClick={(e) => e.stopPropagation()}>
+            <span className="lj-confirm-kicker">Encerrar sessão</span>
+            <h3>Deseja sair da conta?</h3>
+            <p>
+              Seu carrinho será salvo com os itens e quantidades atuais para você continuar depois sem perder o que montou.
+            </p>
+            <div className="lj-confirm-actions">
+              <button type="button" className="lj-confirm-cancel" onClick={cancelarSaida}>
+                Continuar logado
+              </button>
+              <button type="button" className="lj-confirm-danger" onClick={confirmarSaida}>
+                Sair da conta
+              </button>
+            </div>
           </div>
         </div>
       )}
