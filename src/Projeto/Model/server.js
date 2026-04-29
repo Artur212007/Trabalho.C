@@ -10,19 +10,20 @@ const PORT = process.env.PORT || 3001;
 app.use(cors(), express.json(), morgan('dev'));
 
 // ── ROTAS ─────────────────────────────────────────────────────────────────────
-app.use('/api',            require('./routes/Auth'));
-app.use('/api/dashboard',  require('./routes/Dashboard'));
-app.use('/api/produtos',   require('./routes/Produtos'));
-app.use('/api/clientes',   require('./routes/Cliente'));
-app.use('/api/fornecedores', require('./routes/Fornecedores'));
-app.use('/api/funcionarios', require('./routes/Funcionario'));
-app.use('/api/cargos',     require('./routes/Funcionario')); // /cargos está dentro de funcionarios
-app.use('/api/vendas',     require('./routes/Vendas'));
-app.use('/api/OrdemServico', require('./routes/OrdemServico'));
-app.use('/api/orcamentos', require('./routes/Orcamentos'));
-app.use('/api/caixa',      require('./routes/Caixa'));
-app.use('/api/pagamentos', require('./routes/Pagamentos'));
-app.use('/api/despesas',   require('./routes/Despesas'));
+app.use('/api',               require('./routes/Auth'));
+app.use('/api/dashboard',     require('./routes/Dashboard'));
+app.use('/api/produtos',      require('./routes/Produtos'));
+app.use('/api/clientes',      require('./routes/Cliente'));
+app.use('/api/fornecedores',  require('./routes/Fornecedores'));
+app.use('/api/funcionarios',  require('./routes/Funcionario'));
+app.use('/api/cargos',        require('./routes/Funcionario'));
+app.use('/api/vendas',        require('./routes/Vendas'));
+app.use('/api/notificacoes',  require('./routes/Notificacoes')); 
+app.use('/api/OrdemServico',  require('./routes/OrdemServico'));
+app.use('/api/orcamentos',    require('./routes/Orcamentos'));
+app.use('/api/caixa',         require('./routes/Caixa'));
+app.use('/api/pagamentos',    require('./routes/Pagamentos'));
+app.use('/api/despesas',      require('./routes/Despesas'));
 app.use('/api/movimentacoes', require('./routes/Movimentacoes'));
 
 // ── ERRO GLOBAL ───────────────────────────────────────────────────────────────

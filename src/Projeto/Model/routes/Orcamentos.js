@@ -1,10 +1,22 @@
 const router   = require('express').Router();
 const auth     = require('../middleware/Auth');
+const permissao = require('../middleware/permissao');
 const { q, buildSet } = require('../helpers/db');
 const { err400, err404, err500, ok } = require('../helpers/Response');
 
+const pGerente = permissao(1, 2);
+const pTecnico = permissao(1, 2, 4);
+
+// ── helper notificação ────────────────────────────────────────────────────────
+async function notificar(id_funcionario, titulo, mensagem) {
+  try {
+    await q(`INSERT INTO notificacao (id_funcionario, titulo, mensagem) VALUES (?, ?, ?)`,
+      [id_funcionario, titulo, mensagem]);
+  } catch (e) { console.error('Erro ao criar notificação:', e.message); }
+}
+
 function statusToDb(status) {
-  if (status === 1 || status === '1' || status === 'aceito') return 1;
+  if (status === 1 || status === '1' || status === 'aceito')    return 1;
   if (status === 2 || status === '2' || status === 'cancelado') return 2;
   return 0;
 }
@@ -15,8 +27,33 @@ function statusToText(status) {
   return 'pendente';
 }
 
+// ── helper: cria OS a partir de orçamento ────────────────────────────────────
+async function criarOSdoOrcamento(orc) {
+  const r = await q(
+    `INSERT INTO ordem_servico
+       (id_cliente, id_tecnico, descricao_problema, status, status_execucao, id_orcamento, data_abertura)
+     VALUES (?, ?, ?, 0, 0, ?, NOW())`,
+    [
+      orc.id_cliente,
+      orc.id_tecnico || null,
+      orc.descricao  || 'Gerado a partir de orçamento',
+      orc.id_orcamento, // 👈 vincula sempre
+    ]
+  );
+
+  if (orc.id_tecnico) {
+    await notificar(
+      orc.id_tecnico,
+      `Nova OS #${r.insertId} gerada a partir de orçamento`,
+      `O orçamento #${orc.id_orcamento} foi aceito e gerou uma nova OS. Acesse o sistema para avaliação.`
+    );
+  }
+
+  return r.insertId;
+}
+
 // ── LISTAR ────────────────────────────────────────────────────────────────────
-router.get('/', auth, async (req, res) => {
+router.get('/', auth, pTecnico, async (req, res) => {
   try {
     const rows = await q(`
       SELECT o.id_orcamento, o.id_cliente, o.descricao, o.valor_total, o.validade,
@@ -38,7 +75,7 @@ router.get('/', auth, async (req, res) => {
 });
 
 // ── DISPONÍVEIS (para vincular a OS) ─────────────────────────────────────────
-router.get('/disponiveis', auth, async (req, res) => {
+router.get('/disponiveis', auth, pTecnico, async (req, res) => {
   try {
     const rows = await q(`
       SELECT o.id_orcamento, o.descricao, o.valor_total
@@ -52,10 +89,10 @@ router.get('/disponiveis', auth, async (req, res) => {
 });
 
 // ── BUSCAR POR ID ─────────────────────────────────────────────────────────────
-router.get('/:id', auth, async (req, res) => {
+router.get('/:id', auth, pTecnico, async (req, res) => {
   try {
     const r = await q(`
-      SELECT o.*, 
+      SELECT o.*,
              CASE
                WHEN o.status = 1 THEN 'aceito'
                WHEN o.status = 2 THEN 'cancelado'
@@ -70,8 +107,8 @@ router.get('/:id', auth, async (req, res) => {
   } catch (e) { err500(res, e); }
 });
 
-// ── CRIAR ─────────────────────────────────────────────────────────────────────
-router.post('/', auth, async (req, res) => {
+// ── CRIAR — só gerente e admin ────────────────────────────────────────────────
+router.post('/', auth, pGerente, async (req, res) => {
   const { id_cliente, descricao, valor_total, validade, status, tipo } = req.body;
   if (!id_cliente || !valor_total || !validade)
     return err400(res, 'Campos obrigatórios: id_cliente, valor_total, validade');
@@ -79,17 +116,16 @@ router.post('/', auth, async (req, res) => {
   try {
     const statusDb = statusToDb(status);
     const r = await q(
-      `INSERT INTO orcamento (id_cliente,descricao,valor_total,validade,status) VALUES (?,?,?,?,?)`,
-      [id_cliente, descricao || null, valor_total, validade, statusDb]
+      `INSERT INTO orcamento (id_cliente, descricao, valor_total, validade, status, tipo)
+       VALUES (?,?,?,?,?,?)`,
+      [id_cliente, descricao || null, valor_total, validade, statusDb, tipo || 'normal']
     );
     const id_orcamento = r.insertId;
 
-    // Cria OS automática se orçamento de OS for aceito
-    if (tipo === 'os' && status === 'aceito') {
-      await q(
-        `INSERT INTO ordem_servico (id_cliente,descricao_problema,status,data_abertura) VALUES (?,?,0,NOW())`,
-        [id_cliente, descricao || 'Gerado automaticamente']
-      );
+    // Se já criado como aceito e tipo OS → cria OS imediatamente
+    const isOS = tipo === 'os' || Number(tipo) === 1;
+    if (isOS && statusDb === 1) {
+      await criarOSdoOrcamento({ id_cliente, id_tecnico: null, descricao, id_orcamento });
     }
 
     res.status(201).json({ success: true, id_orcamento });
@@ -99,35 +135,38 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
-// ── ATUALIZAR ─────────────────────────────────────────────────────────────────
-router.put('/:id', auth, async (req, res) => {
+// ── ATUALIZAR — só gerente e admin ───────────────────────────────────────────
+router.put('/:id', auth, pGerente, async (req, res) => {
   const { id } = req.params;
   try {
     const [orc] = await q(`SELECT * FROM orcamento WHERE id_orcamento=?`, [id]);
     if (!orc) return err404(res, 'Orçamento não encontrado');
 
+    // 👇 ADICIONE ISSO
+    if (statusToText(orc.status) === 'aceito') {
+      return err400(res, 'Orçamento aceito não pode ser editado');
+    }
+
     const payload = { ...req.body };
     if (payload.status !== undefined) payload.status = statusToDb(payload.status);
 
-    const { cols, vals } = buildSet(payload, ['id_cliente', 'descricao', 'valor_total', 'validade', 'status']);
+    const { cols, vals } = buildSet(payload, ['id_cliente', 'descricao', 'valor_total', 'validade', 'status', 'tipo']);
     if (!cols.length) return err400(res, 'Nada para atualizar');
 
     await q(`UPDATE orcamento SET ${cols.join(', ')} WHERE id_orcamento=?`, [...vals, id]);
 
-    // Cria OS se orçamento virou tipo=os e status=aceito
-    const novoStatus = req.body.status || statusToText(orc.status);
-    const novoTipo   = req.body.tipo   || orc.tipo;
+    const novoStatus = req.body.status !== undefined ? req.body.status : statusToText(orc.status);
+    const novoTipo   = req.body.tipo   !== undefined ? req.body.tipo   : orc.tipo;
+    const isOS       = novoTipo === 'os' || Number(novoTipo) === 1;
 
-    if (novoTipo === 'os' && novoStatus === 'aceito') {
+    // Cria OS se virou aceito e é tipo OS — e ainda não tem OS vinculada
+    if (isOS && (novoStatus === 'aceito' || novoStatus === 1)) {
       const existing = await q(
-        `SELECT id_ordem_servico FROM ordem_servico WHERE id_cliente=? AND descricao_problema=?`,
-        [orc.id_cliente, orc.descricao]
+        `SELECT id_ordem_servico FROM ordem_servico WHERE id_orcamento=?`,
+        [id]
       );
       if (!existing.length) {
-        await q(
-          `INSERT INTO ordem_servico (id_cliente,descricao_problema,status,data_abertura) VALUES (?,?,?,NOW())`,
-          [orc.id_cliente, orc.descricao || 'Gerado automaticamente', 0]
-        );
+        await criarOSdoOrcamento({ ...orc, id_orcamento: Number(id) });
       }
     }
 
@@ -139,7 +178,7 @@ router.put('/:id', auth, async (req, res) => {
 });
 
 // ── ACEITAR ───────────────────────────────────────────────────────────────────
-router.put('/:id/aceitar', auth, async (req, res) => {
+router.put('/:id/aceitar', auth, pGerente, async (req, res) => {
   try {
     const [orc] = await q(`SELECT * FROM orcamento WHERE id_orcamento=?`, [req.params.id]);
     if (!orc) return err404(res, 'Orçamento não encontrado');
@@ -147,13 +186,9 @@ router.put('/:id/aceitar', auth, async (req, res) => {
 
     await q(`UPDATE orcamento SET status=1 WHERE id_orcamento=?`, [req.params.id]);
 
-    // Se for tipo OS → cria ordem de serviço
-    if (Number(orc.tipo) === 1) {
-      await q(
-        `INSERT INTO ordem_servico (id_cliente,id_tecnico,descricao_problema,status,id_orcamento,data_abertura)
-         VALUES (?,?,?,0,?,NOW())`,
-        [orc.id_cliente, orc.id_tecnico, orc.descricao || 'Gerado a partir de orçamento', orc.id_orcamento]
-      );
+    const isOS = orc.tipo === 'os' || Number(orc.tipo) === 1;
+    if (isOS) {
+      await criarOSdoOrcamento(orc);
     }
 
     ok(res, { message: 'Orçamento aceito com sucesso' });
@@ -161,18 +196,28 @@ router.put('/:id/aceitar', auth, async (req, res) => {
 });
 
 // ── CANCELAR ──────────────────────────────────────────────────────────────────
-router.put('/:id/cancelar', auth, async (req, res) => {
+router.put('/:id/cancelar', auth, pGerente, async (req, res) => {
   try {
     await q(`UPDATE orcamento SET status=2 WHERE id_orcamento=?`, [req.params.id]);
     ok(res, { message: 'Orçamento cancelado' });
   } catch (e) { err500(res, e); }
 });
 
-// ── EXCLUIR ───────────────────────────────────────────────────────────────────
-router.delete('/:id', auth, async (req, res) => {
+// ── EXCLUIR — só gerente e admin ─────────────────────────────────────────────
+router.delete('/:id', auth, pGerente, async (req, res) => {
   try {
     const exists = await q(`SELECT id_orcamento FROM orcamento WHERE id_orcamento=?`, [req.params.id]);
     if (!exists.length) return err404(res, 'Orçamento não encontrado');
+
+    // 👇 ADICIONE ISSO
+    const osVinculada = await q(
+      `SELECT id_ordem_servico FROM ordem_servico WHERE id_orcamento=?`,
+      [req.params.id]
+    );
+    if (osVinculada.length) {
+      return err400(res, `Exclua primeiro a OS #${osVinculada[0].id_ordem_servico} vinculada a este orçamento`);
+    }
+
     await q(`DELETE FROM orcamento WHERE id_orcamento=?`, [req.params.id]);
     ok(res, { message: 'Orçamento deletado com sucesso' });
   } catch (e) { err500(res, e); }

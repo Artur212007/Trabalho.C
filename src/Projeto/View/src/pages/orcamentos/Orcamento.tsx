@@ -106,6 +106,7 @@ export default function Orcamentos() {
     };
   }, [lista]);
 
+
   async function fetchOrcamentos() {
     try {
       setLoading(true);
@@ -164,7 +165,11 @@ export default function Orcamentos() {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      if (!res.ok) throw new Error("Erro ao deletar");
+      if (!res.ok) {
+        const e = await res.json();
+        alert(e.error || 'Erro ao excluir');
+        return;
+      }
 
       fetchOrcamentos();
 
@@ -326,9 +331,15 @@ export default function Orcamentos() {
                       <td>{o.validade ? new Date(o.validade).toLocaleDateString("pt-BR") : "-"}</td>
                       <td>
                         <div className="row-actions">
-                          <button className="icon-btn edit" onClick={() => navigate(`/orcamentos/editar/${o.id}`)}>
-                          <IconEdit />
-                          </button>
+                          {/* Editar — só aparece se não for aceito */}
+                          {o.status !== "aceito" && (
+                            <button
+                              className="icon-btn edit"
+                              onClick={() => navigate(`/orcamentos/editar/${o.id}`)}
+                            >
+                              <IconEdit />
+                            </button>
+                          )}
 
                           <button className="icon-btn del" onClick={() => deletar(o.id)}>
                             <IconTrash />

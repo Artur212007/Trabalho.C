@@ -1,27 +1,57 @@
-const router = require('express').Router();
-const auth   = require('../middleware/Auth');
-const { q }  = require('../helpers/db');
-const { err400, err500 } = require('../helpers/Response');
+const router   = require('express').Router();
+const auth     = require('../middleware/Auth');
+const permissao = require('../middleware/permissao');
+const { q }    = require('../helpers/db');
+const { err400, err404, err500, ok } = require('../helpers/Response');
+
+const pCaixa  = permissao(1, 2, 5);
+const pGerente = permissao(1, 2);
+
+// ── LISTAR ────────────────────────────────────────────────────────────────────
+router.get('/', auth, pCaixa, async (req, res) => {
+  try {
+    res.json(await q(`
+      SELECT d.*, f.nome AS funcionario_nome
+      FROM despesa d
+      LEFT JOIN funcionario f ON f.id_funcionario = d.id_funcionario
+      ORDER BY d.data DESC
+    `));
+  } catch (e) { err500(res, e); }
+});
+
+// ── BUSCAR POR ID ─────────────────────────────────────────────────────────────
+router.get('/:id', auth, pCaixa, async (req, res) => {
+  try {
+    const [d] = await q(`SELECT * FROM despesa WHERE id_despesa=?`, [req.params.id]);
+    if (!d) return err404(res, 'Despesa não encontrada');
+    res.json(d);
+  } catch (e) { err500(res, e); }
+});
 
 // ── CRIAR ─────────────────────────────────────────────────────────────────────
-router.post('/', auth, async (req, res) => {
-  const { descricao, valor, status } = req.body;
+router.post('/', auth, pCaixa, async (req, res) => {
+  const { descricao, valor, status, categoria, id_funcionario } = req.body;
   if (!valor || valor <= 0) return err400(res, 'Valor deve ser maior que zero');
+  if (!descricao)           return err400(res, 'Descrição é obrigatória');
 
   try {
     const r = await q(
-      `INSERT INTO despesa (descricao,valor,status,data) VALUES (?,?,?,NOW())`,
-      [descricao || 'Despesa', valor, status || 'pendente']
+      `INSERT INTO despesa (descricao, valor, status, categoria, id_funcionario, data)
+       VALUES (?,?,?,?,?,NOW())`,
+      [descricao, valor, status || 'pendente', categoria || null, id_funcionario || null]
     );
     const id_despesa = r.insertId;
 
-    // Se já for paga → saída no caixa
+    // Se já criada como paga → saída no caixa
     if (status === 'pago') {
-      const [caixa] = await q(`SELECT id_caixa FROM caixa WHERE valor_fechamento IS NULL ORDER BY data DESC LIMIT 1`);
+      const [caixa] = await q(
+        `SELECT id_caixa FROM caixa WHERE valor_fechamento IS NULL ORDER BY data DESC LIMIT 1`
+      );
       if (caixa) {
         await q(
-          `INSERT INTO movimentacao_caixa (id_caixa,tipo,valor,descricao) VALUES (?,'saida',?,?)`,
-          [caixa.id_caixa, valor, `Despesa #${id_despesa} - ${descricao || 'Sem descrição'}`]
+          `INSERT INTO movimentacao_caixa (id_caixa, tipo, valor, descricao, id_referencia)
+           VALUES (?, 'saida', ?, ?, ?)`,
+          [caixa.id_caixa, valor, `Despesa - ${descricao}`, id_despesa]
         );
       }
     }
@@ -30,33 +60,52 @@ router.post('/', auth, async (req, res) => {
   } catch (e) { err500(res, e); }
 });
 
-// ── LISTAR ────────────────────────────────────────────────────────────────────
-router.get('/', auth, async (req, res) => {
-  try { res.json(await q(`SELECT * FROM despesa ORDER BY data DESC`)); }
-  catch (e) { err500(res, e); }
-});
-
-// ── BUSCAR POR ID ─────────────────────────────────────────────────────────────
-router.get('/:id', auth, async (req, res) => {
+// ── ATUALIZAR ─────────────────────────────────────────────────────────────────
+router.put('/:id', auth, pCaixa, async (req, res) => {
+  const { descricao, valor, status, categoria, id_funcionario } = req.body;
   try {
-    const rows = await q(`SELECT * FROM despesa WHERE id_despesa=?`, [req.params.id]);
-    if (!rows.length) return res.status(404).json({ error: 'Despesa não encontrada' });
-    res.json(rows[0]);
+    const [d] = await q(`SELECT * FROM despesa WHERE id_despesa=?`, [req.params.id]);
+    if (!d) return err404(res, 'Despesa não encontrada');
+
+    await q(
+      `UPDATE despesa SET descricao=?, valor=?, status=?, categoria=?, id_funcionario=?
+       WHERE id_despesa=?`,
+      [
+        descricao   ?? d.descricao,
+        valor       ?? d.valor,
+        status      ?? d.status,
+        categoria   ?? d.categoria,
+        id_funcionario ?? d.id_funcionario,
+        req.params.id
+      ]
+    );
+
+    // Se virou pago agora → saída no caixa
+    if (status === 'pago' && d.status !== 'pago') {
+      const [caixa] = await q(
+        `SELECT id_caixa FROM caixa WHERE valor_fechamento IS NULL ORDER BY data DESC LIMIT 1`
+      );
+      if (caixa) {
+        await q(
+          `INSERT INTO movimentacao_caixa (id_caixa, tipo, valor, descricao, id_referencia)
+           VALUES (?, 'saida', ?, ?, ?)`,
+          [caixa.id_caixa, valor ?? d.valor, `Despesa - ${descricao ?? d.descricao}`, req.params.id]
+        );
+      }
+    }
+
+    ok(res, { message: 'Despesa atualizada com sucesso' });
   } catch (e) { err500(res, e); }
 });
 
-// ── ATUALIZAR ─────────────────────────────────────────────────────────────────
-router.put('/:id', auth, async (req, res) => {
-  const { descricao, valor, status, data } = req.body;
+// ── EXCLUIR — só gerente ──────────────────────────────────────────────────────
+router.delete('/:id', auth, pGerente, async (req, res) => {
   try {
-    const exists = await q(`SELECT id_despesa FROM despesa WHERE id_despesa=?`, [req.params.id]);
-    if (!exists.length) return res.status(404).json({ error: 'Despesa não encontrada' });
-
-    await q(
-      `UPDATE despesa SET descricao=?,valor=?,status=?,data=? WHERE id_despesa=?`,
-      [descricao, valor, status, data, req.params.id]
-    );
-    res.json({ success: true });
+    const [d] = await q(`SELECT id_despesa, status FROM despesa WHERE id_despesa=?`, [req.params.id]);
+    if (!d) return err404(res, 'Despesa não encontrada');
+    if (d.status === 'pago') return err400(res, 'Não é possível excluir despesa já paga');
+    await q(`DELETE FROM despesa WHERE id_despesa=?`, [req.params.id]);
+    ok(res, { message: 'Despesa excluída com sucesso' });
   } catch (e) { err500(res, e); }
 });
 

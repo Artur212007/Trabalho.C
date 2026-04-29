@@ -56,6 +56,12 @@ export default function OrcamentoForm() {
 
     const data = await res.json();
 
+    if (data.status === "aceito") {
+    alert("Orçamento aceito não pode ser editado.");
+    navigate("/orcamentos");
+    return;
+  }
+
     setIdCliente(String(data.id_cliente));
     setDescricao(data.descricao || "");
     setValor(String(data.valor_total || ""));

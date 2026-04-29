@@ -20,6 +20,7 @@ import VendasForm       from "./pages/vendas/VendasForm";
 import VendasDetalhes   from "./pages/vendas/VendasDetalhes";
 import Ordem            from "./pages/OrdemServico/OrdemServico";
 import OrdemForm        from "./pages/OrdemServico/OrdemServicoForm";
+import OrdemServicoDetalhes from "./pages/OrdemServico/OrdemServicoDetalhes";
 import Orcamento        from "./pages/orcamentos/Orcamento";
 import OrcamentoForm    from "./pages/orcamentos/OrcamentoForm";
 import Caixa            from "./pages/FluxoCaixa/FluxoCaixa";
@@ -88,29 +89,31 @@ createRoot(root!).render(
       <Route path="/ordem"            element={<PrivateRoute element={<Ordem />}    niveis={TECNICO} />} />
       <Route path="/ordem/novo"       element={<PrivateRoute element={<OrdemForm />} niveis={TECNICO} />} />
       <Route path="/ordem/editar/:id" element={<PrivateRoute element={<OrdemForm />} niveis={TECNICO} />} />
-
+      <Route path="/ordem/:id/detalhes" element={<PrivateRoute element={<OrdemServicoDetalhes />} niveis={TECNICO} />} />
+    
       {/* ── ORÇAMENTOS — gerente+ ── */}
       <Route path="/orcamentos"            element={<PrivateRoute element={<Orcamento />}    niveis={GERENTE} />} />
       <Route path="/orcamentos/novo"       element={<PrivateRoute element={<OrcamentoForm />} niveis={GERENTE} />} />
       <Route path="/orcamentos/editar/:id" element={<PrivateRoute element={<OrcamentoForm />} niveis={GERENTE} />} />
+      {/*FINANCEIRO*/}
 
       {/* ── CAIXA — caixa e gerente+ ── */}
-      <Route path="/caixa"            element={<PrivateRoute element={<Caixa />}    niveis={CAIXA} />} />
-      <Route path="/caixa/novo"       element={<PrivateRoute element={<CaixaForm />} niveis={CAIXA} />} />
-      <Route path="/caixa/editar/:id" element={<PrivateRoute element={<CaixaForm />} niveis={CAIXA} />} />
+      <Route path="/caixa"               element={<PrivateRoute element={<Caixa />}        niveis={CAIXA} />} />
+      <Route path="/caixa/novo"          element={<PrivateRoute element={<CaixaForm />}     niveis={CAIXA} />} />
+      <Route path="/caixa/editar/:id"    element={<PrivateRoute element={<CaixaForm />}     niveis={CAIXA} />} />
 
       {/* ── PAGAMENTOS — caixa e gerente+ ── */}
-      <Route path="/pagamentos"            element={<PrivateRoute element={<Pagamentos />}    niveis={CAIXA} />} />
-      <Route path="/pagamentos/novo"       element={<PrivateRoute element={<PagamentosForm />} niveis={CAIXA} />} />
+      <Route path="/pagamentos"          element={<PrivateRoute element={<Pagamentos />}    niveis={CAIXA} />} />
+      <Route path="/pagamentos/novo"     element={<PrivateRoute element={<PagamentosForm />} niveis={CAIXA} />} />
       <Route path="/pagamentos/editar/:id" element={<PrivateRoute element={<PagamentosForm />} niveis={CAIXA} />} />
 
       {/* ── DESPESAS — gerente+ ── */}
-      <Route path="/despesas"            element={<PrivateRoute element={<Despesas />}    niveis={GERENTE} />} />
-      <Route path="/despesas/novo"       element={<PrivateRoute element={<DespesasForm />} niveis={GERENTE} />} />
-      <Route path="/despesas/editar/:id" element={<PrivateRoute element={<DespesasForm />} niveis={GERENTE} />} />
+      <Route path="/despesas"            element={<PrivateRoute element={<Despesas />}      niveis={CAIXA} />} />
+      <Route path="/despesas/novo"       element={<PrivateRoute element={<DespesasForm />}  niveis={CAIXA} />} />
+      <Route path="/despesas/editar/:id" element={<PrivateRoute element={<DespesasForm />}  niveis={CAIXA} />} />
 
       {/* ── MOVIMENTAÇÕES — gerente+ ── */}
-      <Route path="/movimentacoes" element={<PrivateRoute element={<Movimentacoes />} niveis={GERENTE} />} />
+      <Route path="/movimentacoes"       element={<PrivateRoute element={<Movimentacoes />} niveis={CAIXA} />} />
 
       {/* ── USUÁRIOS — só admin ── */}
       <Route path="/usuarios" element={<PrivateRoute element={<Usuarios />} niveis={ADMIN} />} />

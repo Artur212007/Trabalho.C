@@ -213,3 +213,6 @@ tbody td { padding: 14px 24px; font-size: 13px; color: #344054; }
 	.table-card { border-radius: 14px; overflow-x: auto; }
 	table { min-width: 560px; }
 }
+
+.status-info    { background: #dbeafe; color: #1d4ed8; }
+.status-neutral { background: #f4f4f5; color: #71717a; }
