@@ -22,6 +22,8 @@ a { cursor: pointer; }
   --r-lg: 16px;
   --r-xl: 24px;
   --r-full: 9999px;
+  --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-gentle: cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .lj { min-height: 100vh; }
@@ -32,8 +34,9 @@ a { cursor: pointer; }
   top: 0; left: 0; right: 0;
   z-index: 500;
   background: transparent;
-  transition: background 0.3s, backdrop-filter 0.3s;
+  transition: background 0.35s var(--ease-soft), backdrop-filter 0.35s var(--ease-soft);
 }
+
 .lj-header.solid {
   background: rgba(17, 24, 39, 0.95);
   backdrop-filter: blur(12px);
@@ -57,6 +60,7 @@ a { cursor: pointer; }
   text-decoration: none;
   flex-shrink: 0;
 }
+
 .lj-logo-mark {
   width: 36px; height: 36px;
   min-width: 36px;
@@ -66,6 +70,7 @@ a { cursor: pointer; }
   display: flex; align-items: center; justify-content: center;
   border-radius: var(--r-sm);
 }
+
 .lj-logo span {
   display: flex;
   align-items: center;
@@ -74,7 +79,6 @@ a { cursor: pointer; }
   font-weight: 700;
   letter-spacing: -0.3px;
   height: 36px;
-  line-height: 36px;
   margin: 0; padding: 0;
 }
 
@@ -83,18 +87,21 @@ a { cursor: pointer; }
   align-items: center;
   gap: 4px;
 }
+
 .lj-nav a {
   color: #fff !important;
   text-decoration: none;
   font-size: 14px; font-weight: 600;
   padding: 6px 14px;
   border-radius: var(--r-full);
-  transition: all 0.2s;
+  transition: opacity 0.24s var(--ease-soft), background-color 0.24s var(--ease-soft), transform 0.24s var(--ease-soft);
   opacity: 0.85;
 }
+
 .lj-nav a:hover {
   opacity: 1;
   background: rgba(255,255,255,0.12);
+  transform: translateY(-0.5px);
 }
 
 .lj-nav-close {
@@ -106,6 +113,7 @@ a { cursor: pointer; }
   font-size: 13px; padding: 8px 16px;
   border-radius: var(--r-sm);
   margin-top: 8px;
+  transition: background-color 0.24s var(--ease-soft), transform 0.24s var(--ease-soft), opacity 0.24s var(--ease-soft);
 }
 
 .lj-header-right {
@@ -120,21 +128,23 @@ a { cursor: pointer; }
   color: rgba(255,255,255,0.65);
   border-radius: var(--r-full);
   position: relative;
-  transition: all 0.2s;
+  transition: background-color 0.24s var(--ease-soft), color 0.24s var(--ease-soft), transform 0.24s var(--ease-soft);
 }
+
 .lj-hbtn:hover {
   color: #fff;
   background: rgba(255,255,255,0.08);
+  transform: translateY(-0.5px);
 }
 
 .lj-cart-btn { position: relative; }
+
 .lj-cart-badge {
   position: absolute; top: 2px; right: 2px;
   min-width: 17px; height: 17px;
   background: var(--yellow); color: #000;
   font-size: 10px; font-weight: 800;
   display: flex; align-items: center; justify-content: center;
-  padding: 0 4px;
   border-radius: var(--r-full);
 }
 
@@ -146,26 +156,56 @@ a { cursor: pointer; }
   font-size: 13px; font-weight: 600;
   padding: 7px 16px;
   border-radius: var(--r-full);
-  transition: all 0.2s;
+  transition: background-color 0.24s var(--ease-soft), border-color 0.24s var(--ease-soft), color 0.24s var(--ease-soft), transform 0.24s var(--ease-soft);
 }
+
 .lj-sair:hover {
   color: #fff;
   background: rgba(255,255,255,0.12);
   border-color: rgba(255,255,255,0.25);
+  transform: translateY(-0.5px);
 }
 
 .lj-hamburger {
-  display: none; flex-direction: column; gap: 5px;
-  background: none; border: none; padding: 6px;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.10);
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border-radius: var(--r-full);
+  transition: background-color 0.24s var(--ease-soft), border-color 0.24s var(--ease-soft), transform 0.24s var(--ease-soft), box-shadow 0.24s var(--ease-soft);
+  backdrop-filter: blur(8px);
 }
-.lj-hamburger span { display: block; width: 20px; height: 2px; background: #fff; border-radius: 2px; }
+
+.lj-hamburger svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+  color: rgba(255,255,255,0.9);
+  transition: transform 0.24s var(--ease-soft), color 0.24s var(--ease-soft);
+}
+
+.lj-hamburger:hover {
+  background: rgba(255,255,255,0.10);
+  border-color: rgba(255,255,255,0.18);
+  transform: translateY(-0.5px);
+}
+
+.lj-hamburger:hover svg {
+  color: #fff;
+  transform: scale(1.03);
+}
 
 /* Search bar */
 .lj-searchbar {
   background: rgba(17,24,39,0.98);
   border-top: 1px solid rgba(255,255,255,0.06);
   max-height: 0; overflow: hidden;
-  transition: max-height 0.3s ease;
+  transition: max-height 0.34s var(--ease-soft);
 }
 .lj-searchbar.open { max-height: 64px; }
 
@@ -186,9 +226,9 @@ a { cursor: pointer; }
   background: none; border: none;
   color: #777; font-size: 13px; padding: 4px 8px;
   border-radius: var(--r-sm);
-  transition: color 0.15s;
+  transition: color 0.2s var(--ease-soft), transform 0.2s var(--ease-soft);
 }
-.lj-searchbar-inner button:hover { color: #fff; }
+.lj-searchbar-inner button:hover { color: #fff; transform: translateY(-0.5px); }
 
 .lj-mob-overlay {
   position: fixed; inset: 0;
@@ -257,19 +297,38 @@ a { cursor: pointer; }
   gap: 14px; padding: 16px 24px;
   border-bottom: 1px solid var(--border);
 }
-.lj-ci-icon {
-  width: 52px; height: 52px;
-  background: var(--gray);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 24px; flex-shrink: 0;
-  border-radius: var(--r-md);
-  border: 1px solid var(--border);
+
+.lj-ci-trash {
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(15,23,42,.08);
+  background: #fff;
+  color: #64748b;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 6px 14px rgba(15,23,42,.04);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
 }
-.lj-ci-info { flex: 1; min-width: 0; }
-.lj-ci-nome {
-  display: block; font-size: 13px; font-weight: 600;
-  color: #111; margin-bottom: 3px;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+
+.lj-ci-trash:hover {
+  background: #f8fafc;
+  border-color: rgba(15,23,42,.14);
+  color: #0f172a;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 18px rgba(15,23,42,.07);
+}
+
+.lj-ci-trash svg {
+  width: 14px;
+  height: 14px;
+}
+
+.lj-ci-trash:active {
+  transform: translateY(0);
+  box-shadow: 0 6px 12px rgba(15,23,42,.05);
 }
 .lj-ci-unit { display: block; font-size: 12px; color: var(--muted); margin-bottom: 8px; }
 .lj-ci-qty {
@@ -289,7 +348,166 @@ a { cursor: pointer; }
 .lj-ci-qty button:hover { background: var(--border); }
 .lj-ci-qty span { min-width: 26px; text-align: center; font-size: 13px; font-weight: 700; }
 
+@media (max-width: 640px) {
+  .lj-ci-trash {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: 12px;
+  }
+}
+
+.lj-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.42);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+  padding: 20px;
+  animation: confirmOverlayIn 0.18s ease-out both;
+}
+
+.lj-confirm-modal {
+  width: min(92vw, 420px);
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+  border-radius: 24px;
+  border: 1px solid rgba(15,23,42,.08);
+  box-shadow: 0 30px 90px rgba(15,23,42,.16);
+  padding: 30px 26px 24px;
+  text-align: center;
+  animation: confirmModalIn 0.22s ease-out both;
+}
+
+@keyframes confirmOverlayIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes confirmModalIn {
+  from { opacity: 0; transform: translateY(6px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.lj-confirm-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+  color: #0f172a;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 10px 20px rgba(15,23,42,.08);
+}
+
+.lj-confirm-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.lj-confirm-kicker {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #f8fafc;
+  border: 1px solid rgba(15,23,42,.08);
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.lj-confirm-modal h3 {
+  font-size: 22px;
+  line-height: 1.2;
+  color: #0f172a;
+  margin-bottom: 12px;
+}
+
+.lj-confirm-modal p {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #64748b;
+  margin-bottom: 24px;
+}
+
+.lj-confirm-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.lj-confirm-actions button {
+  flex: 1;
+  min-height: 50px;
+  border-radius: 16px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: .01em;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, border-color 0.18s ease, color 0.18s ease, opacity 0.18s ease;
+}
+
+.lj-confirm-cancel {
+  border: 1px solid rgba(15,23,42,.08);
+  background: rgba(255,255,255,.9);
+  color: #0f172a;
+  box-shadow: 0 8px 18px rgba(15,23,42,.03);
+}
+
+.lj-confirm-cancel:hover {
+  background: #fff;
+  transform: translateY(-1px);
+}
+
+.lj-confirm-danger {
+  border: none;
+  background: linear-gradient(180deg, #111827 0%, #0f172a 100%);
+  color: #fff;
+  box-shadow: 0 12px 24px rgba(15,23,42,.14);
+}
+
+.lj-confirm-danger:hover {
+  background: linear-gradient(180deg, #0f172a 0%, #020617 100%);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 640px) {
+  .lj-confirm-modal {
+    padding: 24px 18px 18px;
+  }
+
+  .lj-confirm-actions {
+    flex-direction: column;
+  }
+
+  .lj-confirm-actions button {
+    min-height: 48px;
+  }
+}
+
 .lj-ci-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex-shrink: 0; }
+.lj-ci-cancel {
+  background: transparent;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  border-radius: var(--r-full);
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  transition: all 0.2s;
+}
+.lj-ci-cancel:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+}
 .lj-ci-total { font-size: 15px; font-weight: 700; }
 .lj-ci-del {
   background: none; border: none;
@@ -572,11 +790,37 @@ a { cursor: pointer; }
 }
 .lj-add:hover { background: var(--yellow); color: #000; }
 
+.lj-go-cart {
+  margin-top: 12px;
+  width: 100%;
+  background: #f3f4f6;
+  color: #111827;
+  border: 1px solid var(--border);
+  padding: 10px 18px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  border-radius: var(--r-full);
+  transition: all 0.2s;
+}
+
+.lj-go-cart:hover {
+  background: #e5e7eb;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+
 .lj-qty {
   display: flex; align-items: center;
   background: var(--gray2); border: 1.5px solid var(--border);
   border-radius: var(--r-full);
   overflow: hidden;
+}
+.lj-qty-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
 }
 .lj-qty button {
   width: 34px; height: 34px;
@@ -585,7 +829,23 @@ a { cursor: pointer; }
   transition: background 0.15s;
 }
 .lj-qty button:hover { background: var(--border); }
+.lj-qty button:disabled {
+  opacity: .35;
+  cursor: not-allowed;
+  background: transparent;
+}
 .lj-qty span { min-width: 28px; text-align: center; font-size: 13px; font-weight: 700; }
+
+.lj-stock-limit {
+  font-size: 11px;
+  font-weight: 700;
+  color: #b45309;
+  background: #fef3c7;
+  border: 1px solid #f59e0b33;
+  border-radius: var(--r-full);
+  padding: 4px 10px;
+  white-space: nowrap;
+}
 
 /* Skeleton */
 .lj-card--sk { pointer-events: none; animation: none; }
@@ -700,6 +960,15 @@ a { cursor: pointer; }
   animation: toastUp 0.4s cubic-bezier(0.175,0.885,0.32,1.275) both;
   min-width: 280px;
 }
+
+.lj-toast.err {
+  border-color: rgba(239, 68, 68, 0.45);
+  background: #1f2937;
+}
+
+.lj-toast.ok {
+  border-color: rgba(16,185,129,0.4);
+}
 @keyframes toastUp {
   from { opacity: 0; transform: translateX(-50%) translateY(20px); }
   to   { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -711,6 +980,7 @@ a { cursor: pointer; }
   flex-shrink: 0;
   border-radius: var(--r-md);
 }
+.lj-toast.err .lj-toast-ok { background: var(--red); }
 .lj-toast strong { display: block; font-size: 14px; margin-bottom: 2px; }
 .lj-toast span { font-size: 12px; color: rgba(255,255,255,0.45); }
 
@@ -739,7 +1009,12 @@ a { cursor: pointer; }
   .lj-nav.open { display: flex; }
   .lj-nav a { width: 100%; padding: 12px 16px; font-size: 15px; border-radius: var(--r-md); }
   .lj-nav-close { display: flex; width: 100%; justify-content: center; margin-top: 10px; }
-  .lj-hamburger { display: flex; }
+  .lj-hamburger {
+    display: flex;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+  }
   .lj-sair span { display: none; }
   .lj-searchbar-inner { padding: 0 16px; }
 

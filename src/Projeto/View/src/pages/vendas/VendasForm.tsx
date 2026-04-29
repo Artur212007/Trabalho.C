@@ -190,6 +190,7 @@ export default function VendasForm() {
     const produtoId = Number(produtoSelecionado);
     const produto   = produtos.find(p => p.id === produtoId);
     if (!produto) { showToast("Produto não encontrado", "err"); return; }
+    if (produto.quantidade_estoque <= 0) { showToast("Produto sem estoque", "err"); return; }
 
     const itemExistente = itens.find(i => i.id_produto === produtoId);
     const novaQtd = (itemExistente?.quantidade ?? 0) + quantidade;
@@ -226,8 +227,12 @@ export default function VendasForm() {
   }
 
   const totalVenda          = itens.reduce((s, i) => s + i.subtotal, 0);
+  const totalItens          = itens.length;
+  const totalUnidades       = itens.reduce((s, i) => s + i.quantidade, 0);
   const clienteSelecionado  = clientes.find(c => c.id === clienteId);
   const vendedorSelecionado = vendedores.find(v => v.id === vendedorId);
+  const produtoSelecionadoInfo = produtos.find(p => p.id === Number(produtoSelecionado));
+  const estoqueDisponivel = produtoSelecionadoInfo?.quantidade_estoque ?? 0;
 
   // ── finalizar venda ─────────────────────────────────────────────────────────
   async function finalizarVenda() {
@@ -286,6 +291,22 @@ export default function VendasForm() {
           </div>
         </div>
 
+        <section className="pf-hero">
+          <div>
+            <p className="pf-hero-kicker">Fluxo de venda</p>
+            <h2>Seleção do vendedor</h2>
+            <p className="pf-hero-text">
+              O vendedor responsável é preenchido a partir dos funcionários com cargo de vendedor no banco.
+            </p>
+          </div>
+
+          <div className="pf-hero-chips">
+            <span className="pf-chip">Cargo 3</span>
+            <span className="pf-chip">{vendedores.length} vendedor(es)</span>
+            <span className="pf-chip pf-chip-dark">Campo obrigatório</span>
+          </div>
+        </section>
+
         <div className="pf-card">
           <div className="pf-card-header">
             <div className="pf-card-icon"><IconCart /></div>
@@ -301,9 +322,16 @@ export default function VendasForm() {
             <div className="pf-form">
 
               {/* Vendedor */}
-              <div className="pf-section-title">Vendedor Responsável</div>
-              <div className="pf-grid">
-                <div className="pf-field pf-full">
+              <div className="pf-section-card">
+                <div className="pf-section-head">
+                  <div>
+                    <div className="pf-section-title">Vendedor Responsável</div>
+                    <p className="pf-section-subtitle">Escolha quem ficará vinculado à venda.</p>
+                  </div>
+                </div>
+
+                <div className="pf-grid">
+                  <div className="pf-field pf-full">
                   <label>Selecione o Vendedor *</label>
                   <select
                     value={vendedorId ?? ""}
@@ -316,10 +344,17 @@ export default function VendasForm() {
                     }
                   </select>
                   {vendedorSelecionado && (
-                    <div style={{ marginTop:10, padding:"8px 12px", background:"#eff6ff", border:"1px solid #bfdbfe", borderRadius:6, fontSize:13, color:"#1e40af" }}>
-                      <IconUsers style={{ width: 14, height: 14, marginRight: 6, verticalAlign: "-2px" }} /> Vendedor: <strong>{vendedorSelecionado.nome}</strong>
+                    <div className="pf-selection-card pf-vendedor-card">
+                      <div className="pf-selection-icon">
+                        <IconUsers style={{ width: 16, height: 16 }} />
+                      </div>
+                      <div>
+                        <span>Vendedor selecionado</span>
+                        <strong>{vendedorSelecionado.nome}</strong>
+                      </div>
                     </div>
                   )}
+                  </div>
                 </div>
               </div>
 
@@ -360,10 +395,16 @@ export default function VendasForm() {
                       </option>
                     ))}
                   </select>
+                  {produtoSelecionadoInfo && (
+                    <div className="pf-stock-hint">
+                      Estoque disponível: <strong>{estoqueDisponivel}</strong>
+                    </div>
+                  )}
                 </div>
                 <div className="quantidade-input">
                   <input
                     type="number" min="1" value={quantidade}
+                    max={estoqueDisponivel || undefined}
                     onChange={e => setQuantidade(Number(e.target.value))}
                     placeholder="Qtd"
                   />
@@ -376,6 +417,20 @@ export default function VendasForm() {
               {/* Tabela de itens */}
               {itens.length > 0 ? (
                 <div className="itens-tabela">
+                  <div className="cart-summary">
+                    <div className="cart-summary-main">
+                      <span className="cart-summary-kicker">Carrinho montado</span>
+                      <h3>{totalItens} {totalItens === 1 ? "item" : "itens"} no carrinho</h3>
+                      <p>{totalUnidades} {totalUnidades === 1 ? "unidade" : "unidades"} selecionadas</p>
+                    </div>
+
+                    <div className="cart-total-card">
+                      <span>Total da venda</span>
+                      <strong>{fmt(totalVenda)}</strong>
+                      <small>Valor atualizado automaticamente</small>
+                    </div>
+                  </div>
+
                   <table className="itens-table">
                     <thead>
                       <tr>
@@ -390,25 +445,31 @@ export default function VendasForm() {
                           <td>{fmt(item.valor_unitario)}</td>
                           <td><strong>{fmt(item.subtotal)}</strong></td>
                           <td>
-                            <button className="btn-remove" onClick={() => removerItem(item.id_produto)} type="button">
-                              <IconTrash />
+                            <button
+                              className="btn-remove"
+                              onClick={() => removerItem(item.id_produto)}
+                              type="button"
+                              title="Remover item"
+                              aria-label={`Remover ${item.nome_produto}`}
+                            >
+                              <span className="btn-remove-badge">
+                                <IconTrash />
+                              </span>
+                              <span className="btn-remove-text">Excluir item</span>
                             </button>
                           </td>
                         </tr>
                       ))}
                     </tbody>
-                    <tfoot>
-                      <tr>
-                        <td colSpan={3} className="total-label">TOTAL</td>
-                        <td colSpan={2} className="total-value">{fmt(totalVenda)}</td>
-                      </tr>
-                    </tfoot>
                   </table>
                 </div>
               ) : (
                 <div className="empty-cart">
-                  <p>Nenhum produto adicionado.</p>
-                  <p>Selecione um produto acima para começar.</p>
+                  <div className="empty-cart-icon">
+                    <IconCart />
+                  </div>
+                  <h3>Seu carrinho está vazio</h3>
+                  <p>Adicione produtos acima para montar a venda e visualizar o total aqui.</p>
                 </div>
               )}
             </div>

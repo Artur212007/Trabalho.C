@@ -113,17 +113,23 @@ router.post('/', auth, pVendedor, async (req, res) => {
     const [cliente] = await q(`SELECT id_cliente,nome FROM cliente WHERE id_cliente=? AND ativo=1`, [id_cliente]);
     if (!cliente) return err400(res, 'Cliente não encontrado ou inativo');
 
-    // Verifica estoque
-    await Promise.all(itens.map(async item => {
-      const [p] = await q(`SELECT quantidade_estoque,nome FROM produto WHERE id_produto=?`, [item.id_produto]);
-      if (!p) throw new Error(`Produto ID ${item.id_produto} não encontrado`);
-      if (p.quantidade_estoque < item.quantidade)
-        throw new Error(`Estoque insuficiente para "${p.nome}". Disponível: ${p.quantidade_estoque}`);
-    }));
-
     await new Promise((resolve, reject) => db.beginTransaction(e => e ? reject(e) : resolve()));
     try {
       const valorFinal = desconto ? valor_total - desconto : valor_total;
+
+      for (const item of itens) {
+        const [p] = await q(
+          `SELECT quantidade_estoque,nome FROM produto WHERE id_produto=? FOR UPDATE`,
+          [item.id_produto]
+        );
+
+        if (!p) throw new Error(`Produto ID ${item.id_produto} não encontrado`);
+        if (Number(item.quantidade) <= 0) throw new Error(`Quantidade inválida para "${p.nome}"`);
+        if (p.quantidade_estoque < Number(item.quantidade)) {
+          throw new Error(`Estoque insuficiente para "${p.nome}". Disponível: ${p.quantidade_estoque}`);
+        }
+      }
+
       const { insertId: id_venda } = await q(
         `INSERT INTO venda (id_cliente,id_vendedor,valor_total,data_venda,status) VALUES (?,?,?,NOW(),1)`,
         [id_cliente, id_vendedor, valorFinal]
@@ -134,10 +140,16 @@ router.post('/', auth, pVendedor, async (req, res) => {
         [itens.map(i => [id_venda, i.id_produto, i.quantidade, i.valor_unitario])]
       );
 
-      await Promise.all(itens.map(i =>
-        q(`UPDATE produto SET quantidade_estoque=quantidade_estoque-? WHERE id_produto=? AND quantidade_estoque>=?`,
-          [i.quantidade, i.id_produto, i.quantidade])
-      ));
+      for (const item of itens) {
+        const result = await q(
+          `UPDATE produto SET quantidade_estoque=quantidade_estoque-? WHERE id_produto=? AND quantidade_estoque>=?`,
+          [item.quantidade, item.id_produto, item.quantidade]
+        );
+
+        if (!result.affectedRows) {
+          throw new Error('Não foi possível atualizar o estoque de um dos produtos');
+        }
+      }
 
       await new Promise((resolve, reject) => db.commit(e => e ? reject(e) : resolve()));
       res.status(201).json({ success: true, message: 'Venda registrada com sucesso', id_venda, cliente: cliente.nome, valor_total: valorFinal });

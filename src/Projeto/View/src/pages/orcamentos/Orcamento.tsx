@@ -92,6 +92,7 @@ export default function Orcamentos() {
   const [lista, setLista] = useState<Orcamento[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [orcamentoParaExcluir, setOrcamentoParaExcluir] = useState<Orcamento | null>(null);
 
   const stats = useMemo(() => {
     const pendentes = lista.filter(o => o.status !== "aceito" && o.status !== "cancelado").length;
@@ -154,9 +155,15 @@ export default function Orcamentos() {
     ), [lista, search]
   );
 
-  async function deletar(id: number) {
-    if (!window.confirm("Deseja excluir o orçamento?")) return;
+  function abrirConfirmacaoExclusao(orcamento: Orcamento) {
+    setOrcamentoParaExcluir(orcamento);
+  }
 
+  function fecharConfirmacaoExclusao() {
+    setOrcamentoParaExcluir(null);
+  }
+
+  async function deletar(id: number) {
     try {
       const token = localStorage.getItem("token");
 
@@ -171,6 +178,8 @@ export default function Orcamentos() {
         return;
       }
 
+      setLista(prev => prev.filter(item => item.id !== id));
+      setOrcamentoParaExcluir(null);
       fetchOrcamentos();
 
     } catch (err) {
@@ -341,7 +350,7 @@ export default function Orcamentos() {
                             </button>
                           )}
 
-                          <button className="icon-btn del" onClick={() => deletar(o.id)}>
+                          <button className="icon-btn del" onClick={() => abrirConfirmacaoExclusao(o)}>
                             <IconTrash />
                           </button>
                         </div>
@@ -355,6 +364,28 @@ export default function Orcamentos() {
           </div>
         </div>
       </div>
+
+      {orcamentoParaExcluir && (
+        <div className="orc-modal-overlay" onClick={fecharConfirmacaoExclusao}>
+          <div className="orc-modal" onClick={(e) => e.stopPropagation()}>
+            <span className="orc-modal-kicker">Atenção</span>
+            <h3>Deseja excluir este orçamento?</h3>
+            <p>
+              Você está prestes a excluir o orçamento <strong>#{orcamentoParaExcluir.id}</strong> de <strong>{orcamentoParaExcluir.cliente}</strong>.
+              Essa ação não pode ser desfeita.
+            </p>
+
+            <div className="orc-modal-actions">
+              <button type="button" className="orc-btn orc-btn-ghost" onClick={fecharConfirmacaoExclusao}>
+                Cancelar
+              </button>
+              <button type="button" className="orc-btn orc-btn-danger" onClick={() => deletar(orcamentoParaExcluir.id)}>
+                Excluir orçamento
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

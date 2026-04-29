@@ -101,6 +101,16 @@ body {
     max-width: 400px;
 }
 
+.login-form h2,
+.login-form > p,
+.login-form .label,
+.login-form .password-field,
+.login-form .button,
+.login-form span,
+.login-form .error-box {
+    width: 100%;
+}
+
 .login-container h2 {
     font-size: 26px;
     font-weight: 700;
@@ -137,6 +147,42 @@ input::placeholder {
     color: #9ca3af;
     font-weight: 400;
     font-size: 14px;
+}
+
+.password-field {
+    position: relative;
+    width: 100%;
+}
+
+.password-field input {
+    padding-right: 52px;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: #6b7280;
+    transition: background 0.2s, color 0.2s;
+}
+
+.password-toggle:hover {
+    background: rgba(17, 24, 39, 0.06);
+    color: #111827;
+}
+
+.password-toggle svg {
+    width: 18px;
+    height: 18px;
 }
 
 /* ── Botão ── */
@@ -210,6 +256,11 @@ span a:hover {
     }
 
     .login-form {
+        max-width: 520px;
+        margin: 0 auto;
+    }
+
+    .login-form {
         max-width: 100%;
     }
 }
@@ -228,8 +279,18 @@ span a:hover {
         padding: 22px 18px 36px;
     }
 
+    .login-form {
+        max-width: 100%;
+    }
+
     .login-container h2 {
         font-size: 20px;
+    }
+
+    .password-toggle {
+        right: 8px;
+        width: 32px;
+        height: 32px;
     }
 
     .button {

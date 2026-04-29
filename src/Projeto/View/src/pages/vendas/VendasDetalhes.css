@@ -168,6 +168,15 @@
   color: #2563eb;
 }
 
+.vd-vendedor-card {
+  background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
+}
+
+.vd-vendedor-icon {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
 .vd-money-card .vd-summary-icon {
   background: #ecfdf5;
   color: #059669;
@@ -317,6 +326,30 @@
 
   .vd-status-card {
     width: 100%;
+  }
+
+  .vd-content {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 640px) {
+  .vd-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .vd-hero h1 {
+    font-size: 22px;
+  }
+
+  .vd-table-header {
+    padding: 16px;
+  }
+
+  .vd-items-table thead th,
+  .vd-items-table tbody td {
+    padding-left: 16px;
+    padding-right: 16px;
   }
 }
 

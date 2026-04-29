@@ -2,8 +2,18 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
-import { IconAlert } from "../../components/ui/icons";
+import { IconAlert, IconEye } from "../../components/ui/icons";
 import "./login.css";
+
+const IconEyeOff = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M10.58 10.58A3 3 0 0 0 13.42 13.42" />
+    <path d="M9.88 4.24A11 11 0 0 1 12 4c7 0 11 8 11 8a20.9 20.9 0 0 1-5.17 5.74" />
+    <path d="M6.1 6.1C3.2 8.28 1 12 1 12s4 8 11 8a10.9 10.9 0 0 0 5.2-1.3" />
+    <path d="M1 1l22 22" />
+    <path d="M8.71 8.71a4 4 0 0 0 5.66 5.66" />
+  </svg>
+);
 
 async function autenticarComBackend(usuario: string, senha: string) {
   const response = await fetch("http://localhost:3001/api/login", {
@@ -20,9 +30,16 @@ async function autenticarComBackend(usuario: string, senha: string) {
 }
 
 export function Login() {
+<<<<<<< HEAD
   const [usuario,    setUsuario]    = useState("");
   const [senha,      setSenha]      = useState("");
   const [erro,       setErro]       = useState("");
+=======
+  const [usuario, setUsuario] = useState("");
+  const [senha, setSenha] = useState("");
+  const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [erro, setErro] = useState("");
+>>>>>>> 3db526a043e0617098e65a33e810b7aa23db8224
   const [carregando, setCarregando] = useState(false);
   const navigate = useNavigate();
 
@@ -84,8 +101,63 @@ export function Login() {
           <h2>Bem-vindo de volta</h2>
           <p>Faça o login para continuar sua experiência.</p>
 
+<<<<<<< HEAD
           <div className="label">
             <label>Usuário</label>
+=======
+            <div className="label">
+              <label>Usuário</label>
+            </div>
+            <Input
+              type="text"
+              placeholder="Usuário"
+              value={usuario}
+              onChange={(e) => setUsuario(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+            />
+
+            <div className="label">
+              <label>Senha</label>
+            </div>
+            <div className="password-field">
+              <Input
+                type={mostrarSenha ? "text" : "password"}
+                placeholder="Digite sua senha"
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+              />
+              <button
+                type="button"
+                className="password-toggle"
+                onClick={() => setMostrarSenha(v => !v)}
+                aria-label={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
+                title={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
+              >
+                {mostrarSenha ? <IconEyeOff /> : <IconEye />}
+              </button>
+            </div>
+
+            {erro && (
+              <p style={{
+                color: "red",
+                fontSize: "13px",
+                marginTop: "8px",
+                alignSelf: "flex-start",
+                width: "100%"
+              }}>
+                <IconAlert style={{ width: 14, height: 14, marginRight: 6, verticalAlign: "-2px" }} /> {erro}
+              </p>
+            )}
+
+            <Button type="button" onClick={handleLogin} disabled={carregando}>
+              {carregando ? "Entrando..." : "Entrar"}
+            </Button>
+
+            <span>
+              Ainda não tem conta? <a href="/sign-up">Criar conta</a>
+            </span>
+>>>>>>> 3db526a043e0617098e65a33e810b7aa23db8224
           </div>
           <Input
             type="text"
