@@ -38,7 +38,6 @@ router.get('/resumo/dia', auth, pCaixa, async (req, res) => {
     const [caixa] = await q(`${CAIXA_SELECT} WHERE DATE(c.data)=CURDATE() ORDER BY c.data DESC LIMIT 1`);
     if (!caixa) return res.json({ status: 'fechado', message: 'Nenhum caixa aberto hoje' });
 
-    // Totais de pagamentos do dia
     const [pagamentos] = await q(`
       SELECT
         COUNT(*) AS qtd_pagamentos,
@@ -47,7 +46,6 @@ router.get('/resumo/dia', auth, pCaixa, async (req, res) => {
       WHERE DATE(data_pagamento) = CURDATE() AND status = 'pago'
     `);
 
-    // Totais de despesas do dia
     const [despesas] = await q(`
       SELECT COALESCE(SUM(valor), 0) AS total_despesas
       FROM despesa
@@ -105,7 +103,6 @@ router.get('/:id', auth, pCaixa, async (req, res) => {
     const [caixa] = await q(`${CAIXA_SELECT} WHERE c.id_caixa = ?`, [req.params.id]);
     if (!caixa) return err404(res, 'Caixa não encontrado');
 
-    // Movimentações do caixa
     const movs = await q(`
       SELECT * FROM movimentacao_caixa
       WHERE id_caixa = ? ORDER BY data DESC
@@ -124,7 +121,6 @@ router.post('/', auth, pCaixa, async (req, res) => {
     return err400(res, 'Valor de abertura não pode ser negativo');
 
   try {
-    // Verifica se já tem caixa aberto
     const [aberto] = await q(
       `SELECT id_caixa FROM caixa WHERE valor_fechamento IS NULL ORDER BY data DESC LIMIT 1`
     );
@@ -136,6 +132,20 @@ router.post('/', auth, pCaixa, async (req, res) => {
       [valor_abertura, id_funcionario]
     );
     res.status(201).json({ success: true, message: 'Caixa aberto com sucesso', id_caixa: r.insertId });
+  } catch (e) { err500(res, e); }
+});
+
+// ── EDITAR CAIXA ──────────────────────────────────────────────────────────────
+router.put('/:id', auth, pCaixa, async (req, res) => {
+  const { data, valor_abertura, id_funcionario } = req.body;
+  try {
+    const [exists] = await q(`SELECT id_caixa FROM caixa WHERE id_caixa=?`, [req.params.id]);
+    if (!exists) return err404(res, 'Caixa não encontrado');
+    await q(
+      `UPDATE caixa SET data=?, valor_abertura=?, id_funcionario=? WHERE id_caixa=?`,
+      [data, valor_abertura, id_funcionario, req.params.id]
+    );
+    ok(res, { message: 'Caixa atualizado com sucesso' });
   } catch (e) { err500(res, e); }
 });
 
@@ -167,11 +177,13 @@ router.put('/:id/fechar', auth, pCaixa, async (req, res) => {
   } catch (e) { err500(res, e); }
 });
 
-// ── EXCLUIR — só admin ───────────────────────────────────────────────────────
+// ── EXCLUIR — só gerente/admin ───────────────────────────────────────────────
 router.delete('/:id', auth, pGerente, async (req, res) => {
   try {
     const [exists] = await q(`SELECT id_caixa FROM caixa WHERE id_caixa=?`, [req.params.id]);
     if (!exists) return err404(res, 'Caixa não encontrado');
+    // Remove movimentações vinculadas antes de deletar (evita erro de FK)
+    await q(`DELETE FROM movimentacao_caixa WHERE id_caixa=?`, [req.params.id]);
     await q(`DELETE FROM caixa WHERE id_caixa=?`, [req.params.id]);
     ok(res, { message: 'Caixa excluído com sucesso' });
   } catch (e) { err500(res, e); }

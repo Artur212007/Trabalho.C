@@ -1,3 +1,5 @@
+@import "../../styles/modern-admin.css";
+
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -77,6 +79,7 @@
   border: 1px solid rgba(0,0,0,.08);
   background: #fff;
   box-shadow: 0 12px 30px rgba(15, 23, 42, 0.05);
+  margin-top: 20px;
 }
 
 .u-hero-card {
@@ -366,3 +369,9 @@
     text-align: left;
   }
 }
+
+
+html,body,#root{
+  overflow-x:hidden;
+}
+

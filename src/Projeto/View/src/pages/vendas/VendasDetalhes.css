@@ -1,3 +1,5 @@
+@import "../../styles/modern-admin.css";
+
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -372,7 +374,6 @@
     text-align: center;
   }
 }
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -486,7 +487,7 @@
   background: #fff;
   border-radius: 14px;
   border: 1px solid rgba(0,0,0,.09);
-  overflow: hidden;
+  
   animation: fadeUp .4s ease .25s both;
 }
 
@@ -561,7 +562,7 @@ tbody tr:last-child { border-bottom: none; }
 tbody tr:hover { background: #fafafa; }
 tbody td { padding: 14px 24px; font-size: 13px; }
 
-.td-nome { font-weight: 600; }
+.td-dim { font-weight: 600; }
 .td-id   { color: #71797E; font-size: 12px; }
 .td-dim  { color: #71797E; }
 .td-valor { font-weight: 600; color: #1A1A1A; }
@@ -648,7 +649,7 @@ tbody td { padding: 14px 24px; font-size: 13px; }
 .btn {
   cursor: pointer;
   border: none;
-  border-radius: calc(infinity * 1px);
+  border-radius: 999px;
   font-family: 'Poppins', sans-serif;
   font-weight: 600;
   font-size: 13px;
@@ -845,10 +846,12 @@ tbody td { padding: 14px 24px; font-size: 13px; }
     border-radius: 10px; 
     overflow-x: auto; 
   }
-  table { 
-    min-width: 700px; 
-  }
   .p-content { 
     padding: 12px; 
   }
 }
+
+html,body,#root{
+  overflow-x:hidden;
+}
+

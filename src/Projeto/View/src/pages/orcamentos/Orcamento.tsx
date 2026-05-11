@@ -2,6 +2,9 @@ import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sidebar } from "../../components/sidebar";
 import "./Orcamento.css";
+import "../../styles/data-panel.css";
+import ConfirmDialog from "../../components/ui/ConfirmDialog";
+import { formatCurrency, formatDate } from "../../utils/format";
 
 const API = "http://localhost:3001/api";
 
@@ -238,11 +241,7 @@ export default function Orcamentos() {
           </div>
 
           <div className="p-topbar-actions">
-            <button className="btn btn-ghost" onClick={exportCSV}>
-              <IconDown /> Exportar
-            </button>
-
-            <button
+<button
               className="btn btn-primary"
               onClick={() => navigate("/orcamentos/novo")}
             >
@@ -283,15 +282,15 @@ export default function Orcamentos() {
             </div>
           </div>
 
-          <div className="table-card">
+          <div className="data-panel">
 
-            <div className="table-header">
+            <div className="dp-header">
               <div>
                 <h3>Lista de Orçamentos</h3>
                 <p className="table-subtitle">Acompanhe propostas, validade e situação de cada orçamento.</p>
               </div>
 
-              <div className="search-bar">
+              <div className="dp-search">
                 <IconSearch />
                 <input
                   value={search}
@@ -302,20 +301,19 @@ export default function Orcamentos() {
             </div>
 
             {loading ? (
-              <div className="empty-state">
-                <div className="big-icon"><IconFileText /></div>
+              <div className="dp-empty">
+                <div className="dp-empty-icon"><IconFileText /></div>
                 <p>Carregando orçamentos...</p>
               </div>
             ) : filtrado.length === 0 ? (
-              <div className="empty-state">
-                <div className="big-icon"><IconFileText /></div>
+              <div className="dp-empty">
+                <div className="dp-empty-icon"><IconFileText /></div>
                 <p>Nenhum orçamento encontrado</p>
               </div>
             ) : (
-              <table className="orcamentos-table">
+              <div className="dp-table-wrap"><table className="dp-table">
                 <thead>
                   <tr>
-                    <th>ID</th>
                     <th>Cliente</th>
                     <th>Descrição</th>
                     <th>Valor</th>
@@ -328,29 +326,28 @@ export default function Orcamentos() {
                 <tbody>
                   {filtrado.map(o => (
                     <tr key={o.id}>
-                      <td>#{o.id}</td>
-                      <td>{o.cliente}</td>
-                      <td>{o.descricao || "-"}</td>
-                      <td className="td-value">R$ {o.valor.toFixed(2)}</td>
+                      <td data-label="Cliente">{o.cliente}</td>
+                      <td data-label="Descrição">{o.descricao || "-"}</td>
+                      <td className="dp-cell-mono" data-label="Valor">{formatCurrency(o.valor)}</td>
                       <td>
                         <span className={`status-badge ${getStatusClass(o.status)}`}>
                           {getStatusLabel(o.status)}
                         </span>
                       </td>
-                      <td>{o.validade ? new Date(o.validade).toLocaleDateString("pt-BR") : "-"}</td>
+                      <td data-label="Validade">{formatDate(o.validade)}</td>
                       <td>
-                        <div className="row-actions">
+                        <div className="dp-row-actions">
                           {/* Editar — só aparece se não for aceito */}
                           {o.status !== "aceito" && (
                             <button
-                              className="icon-btn edit"
+                              className="dp-btn-icon dp-edit"
                               onClick={() => navigate(`/orcamentos/editar/${o.id}`)}
                             >
                               <IconEdit />
                             </button>
                           )}
 
-                          <button className="icon-btn del" onClick={() => abrirConfirmacaoExclusao(o)}>
+                          <button className="dp-btn-icon dp-del" onClick={() => abrirConfirmacaoExclusao(o)}>
                             <IconTrash />
                           </button>
                         </div>
@@ -359,33 +356,25 @@ export default function Orcamentos() {
                   ))}
                 </tbody>
 
-              </table>
+              </table></div>
             )}
           </div>
         </div>
       </div>
 
-      {orcamentoParaExcluir && (
-        <div className="orc-modal-overlay" onClick={fecharConfirmacaoExclusao}>
-          <div className="orc-modal" onClick={(e) => e.stopPropagation()}>
-            <span className="orc-modal-kicker">Atenção</span>
-            <h3>Deseja excluir este orçamento?</h3>
-            <p>
-              Você está prestes a excluir o orçamento <strong>#{orcamentoParaExcluir.id}</strong> de <strong>{orcamentoParaExcluir.cliente}</strong>.
-              Essa ação não pode ser desfeita.
-            </p>
-
-            <div className="orc-modal-actions">
-              <button type="button" className="orc-btn orc-btn-ghost" onClick={fecharConfirmacaoExclusao}>
-                Cancelar
-              </button>
-              <button type="button" className="orc-btn orc-btn-danger" onClick={() => deletar(orcamentoParaExcluir.id)}>
-                Excluir orçamento
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={!!orcamentoParaExcluir}
+        title="Excluir este orçamento?"
+        message={
+          orcamentoParaExcluir
+            ? <>Você está prestes a excluir o orçamento <strong>#{orcamentoParaExcluir.id}</strong> de <strong>{orcamentoParaExcluir.cliente}</strong>. Essa ação não pode ser desfeita.</>
+            : null
+        }
+        confirmLabel="Excluir orçamento"
+        variant="danger"
+        onConfirm={() => orcamentoParaExcluir && deletar(orcamentoParaExcluir.id)}
+        onCancel={fecharConfirmacaoExclusao}
+      />
     </div>
   );
 }

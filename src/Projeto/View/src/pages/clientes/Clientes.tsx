@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Sidebar } from "../../components/sidebar";
 import { IconClock, IconPhone, IconUsers } from "../../components/ui/icons";
 import "./Clientes.css";
+import "../../styles/data-panel.css";
+import ConfirmDialog from "../../components/ui/ConfirmDialog";
 
 const API = "http://localhost:3001/api";
 
@@ -154,9 +156,8 @@ export default function Clientes() {
       <Sidebar />
       <div className="clientes-page">
         <header className="p-topbar">
-          <div className="p-topbar-title">Clientes <span>Cadastro</span></div>
+          <div className="p-topbar-title">Clientes</div>
           <div className="p-topbar-actions">
-            <button className="btn btn-ghost" onClick={exportCSV}><IconDown /> Exportar</button>
             <button className="btn btn-primary" onClick={() => navigate("/clientes/novo")}>
               <IconPlus /> Novo Cliente
             </button>
@@ -171,11 +172,11 @@ export default function Clientes() {
             <div className="stat-card"><div className="stat-icon si-purple"><IconPhone /></div><div className="stat-info"><p>Com Telefone</p><strong>{stats.comTel}</strong></div></div>
           </div>
 
-          <div className="table-card">
-            <div className="table-header">
+          <div className="data-panel">
+            <div className="dp-header">
               <h3>Cadastro de Clientes</h3>
-              <div className="table-header-right">
-                <div className="search-bar">
+              <div className="dp-header-right">
+                <div className="dp-search">
                   <IconSearch />
                   <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar cliente..." />
                 </div>
@@ -183,36 +184,34 @@ export default function Clientes() {
             </div>
 
             {loading ? (
-              <div className="empty-state"><div className="big-icon"><IconClock style={{ width: 32, height: 32 }} /></div><p>Carregando clientes...</p></div>
+              <div className="dp-empty"><div className="dp-empty-icon"><IconClock style={{ width: 32, height: 32 }} /></div><p>Carregando clientes...</p></div>
             ) : lista.length === 0 ? (
-              <div className="empty-state">
-                <div className="big-icon"><IconUsers style={{ width: 32, height: 32 }} /></div>
+              <div className="dp-empty">
+                <div className="dp-empty-icon"><IconUsers style={{ width: 32, height: 32 }} /></div>
                 <p>Nenhum cliente encontrado.<br />Clique em <strong>Novo Cliente</strong> para cadastrar.</p>
               </div>
             ) : (
-              <table>
+              <div className="dp-table-wrap"><table className="dp-table">
                 <thead>
                   <tr>
-                    <th>ID</th><th>Nome</th><th>CPF / CNPJ</th>
+                    <th>Nome</th><th>CPF / CNPJ</th>
                     <th>Telefone</th><th>E-mail</th><th>Endereço</th><th>Ações</th>
                   </tr>
                 </thead>
                 <tbody>
                   {lista.map(c => (
                     <tr key={c.id}>
-                      <td className="td-id">#{c.id}</td>
-                      <td className="td-nome">{c.nome}</td>
-                      <td className="td-dim">{c.cpf_cnpj || "—"}</td>
-                      <td className="td-dim">{c.telefone}</td>
-                      <td className="td-dim">{c.email}</td>
-                      <td className="td-dim">{c.endereco}</td>
-                      <td>
-                        <div className="row-actions">
-                          <button className="icon-btn edit" title="Editar" onClick={() => navigate(`/clientes/editar/${c.id}`)}>
+                      <td className="dp-cell-muted">{c.nome}</td>
+                      <td className="dp-cell-muted" data-label="CPF / CNPJ">{c.cpf_cnpj || "—"}</td>
+                      <td className="dp-cell-muted" data-label="Telefone">{c.telefone}</td>
+                      <td className="dp-cell-muted" data-label="E-mail">{c.email}</td>
+                      <td className="dp-cell-muted" data-label="Endereço">{c.endereco}</td>
+                      <td data-label="Ações">
+                        <div className="dp-row-actions">
+                          <button className="dp-btn-icon dp-edit" title="Editar" onClick={() => navigate(`/clientes/editar/${c.id}`)}>
                             <IconEdit />
                           </button>
-                          <button className="icon-btn del" title="Remover" onClick={() => {
-                            console.log('🔴 Clicou no excluir, ID:', c.id);
+                          <button className="dp-btn-icon dp-del" title="Remover" onClick={() => {
                             setConfirmId(c.id);
                           }}>
                             <IconTrash />
@@ -222,35 +221,23 @@ export default function Clientes() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></div>
             )}
           </div>
         </div>
       </div>
 
-      {/* ✅ MODAL CORRIGIDO - usando as classes do CSS que existem */}
-      <div 
-        className={`modal-overlay${confirmId !== null ? " open" : ""}`} 
-        onClick={handleCloseModal}
-      >
-        <div className="confirm-modal" onClick={e => e.stopPropagation()}>
-          <div className="danger-icon"><IconTrash /></div>
-          <h3>Remover este cliente?</h3>
-          <p>"{confirmCliente?.nome || 'Cliente'}" será removido permanentemente.</p>
-          <div className="confirm-actions">
-            <button className="btn btn-ghost" onClick={handleCloseModal}>
-              Cancelar
-            </button>
-            <button 
-              className="btn btn-danger" 
-              onClick={handleDelete} 
-              disabled={deleting}
-            >
-              {deleting ? "Removendo..." : "Sim, remover"}
-            </button>
-          </div>
-        </div>
-      </div>
+      <ConfirmDialog
+        open={confirmId !== null}
+        title="Remover este cliente?"
+        message={<>"{confirmCliente?.nome || 'Cliente'}" será removido permanentemente.</>}
+        confirmLabel={deleting ? "Removendo..." : "Sim, remover"}
+        cancelLabel="Cancelar"
+        variant="danger"
+        loading={deleting}
+        onConfirm={handleDelete}
+        onCancel={handleCloseModal}
+      />
 
       <div className={`toast${toast.visible ? " show" : ""}`}>
         <span className={`toast-dot ${toast.type}`} />

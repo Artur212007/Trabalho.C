@@ -1,3 +1,5 @@
+@import "../../styles/modern-admin.css";
+
 /* ── Grid de info ── */
 .osd-content { display: flex; flex-direction: column; gap: 20px; }
 
@@ -246,3 +248,8 @@
   font-weight: 600;
   width: 100%;
 }
+
+html,body,#root{
+  overflow-x:hidden;
+}
+

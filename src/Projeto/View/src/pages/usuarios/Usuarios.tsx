@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Sidebar } from "../../components/sidebar";
 import { IconAlert, IconCard, IconCheck, IconClock, IconMoney, IconTool, IconUsers } from "../../components/ui/icons";
 import "./Usuarios.css";
+import "../../styles/data-panel.css";
 
 type SessionUser = {
   id?: number;
@@ -62,9 +63,7 @@ export default function Usuarios() {
       <div className="usuarios-page">
         <header className="u-topbar">
           <div className="u-title-block">
-            <span className="u-chip">Perfil e acesso</span>
             <h1>Usuários</h1>
-            <p>Visualize sua conta, nível de acesso e atalhos do sistema em um painel mais limpo e moderno.</p>
           </div>
 
           <div className="u-topbar-actions">
@@ -74,22 +73,7 @@ export default function Usuarios() {
         </header>
 
         <div className="u-content">
-          <section className="u-hero-card">
-            <div className="u-avatar-panel">
-              <div className="u-avatar">{initials}</div>
-              <div>
-                <p className="u-kicker">Conta atual</p>
-                <h2>{nomeExibicao}</h2>
-                <p className="u-muted">{perfil} · {usuario?.usuario ? `@${usuario.usuario}` : "Sem login identificado"}</p>
-              </div>
-            </div>
-
-            <div className="u-hero-meta">
-              <span className="u-badge good">Sessão ativa</span>
-              <span className="u-badge">Acesso protegido</span>
-              <span className="u-badge">Design moderno</span>
-            </div>
-          </section>
+          
 
           <section className="u-grid">
             {accessCards.map(card => (
@@ -176,17 +160,6 @@ export default function Usuarios() {
                 </Link>
               </div>
             </article>
-          </section>
-
-          <section className="u-footer-card">
-            <div className="u-footer-copy">
-              <div className="u-footer-icon"><IconAlert /></div>
-              <div>
-                <h3>Próximo passo recomendado</h3>
-                <p>Se quiser um sistema ainda mais consistente, posso aplicar esse mesmo padrão visual aos formulários restantes.</p>
-              </div>
-            </div>
-            <button className="btn btn-back" onClick={() => navigate("/dashboard")}>Voltar</button>
           </section>
         </div>
       </div>

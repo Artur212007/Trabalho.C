@@ -8,10 +8,11 @@ interface Props {
 
 export default function PrivateRoute({ element, niveis }: Props) {
   const user = getUser();
+  const userNivel = Number((user as any)?.nivel ?? (user as any)?.nivel_acesso ?? 0);
 
   if (!user) return <Navigate to="/" replace />;
 
-  if (niveis && !niveis.includes(user.nivel)) {
+  if (niveis && !niveis.includes(userNivel)) {
     return <Navigate to="/home" replace />;
   }
 

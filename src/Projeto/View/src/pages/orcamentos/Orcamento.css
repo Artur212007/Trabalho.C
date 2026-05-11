@@ -1,3 +1,6 @@
+/* Panel/table styles moved to data-panel.css */
+@import "../../styles/modern-admin.css";
+
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -50,7 +53,7 @@
 .stat-info p { font-size: 11px; color: #667085; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
 .stat-info strong { font-size: 22px; font-weight: 700; line-height: 1.1; color: #101828; }
 
-.table-card { background: #fff; border-radius: 20px; border: 1px solid rgba(0,0,0,.06); overflow: hidden; box-shadow: 0 18px 40px rgba(16,24,40,.06); animation: fadeUp .4s ease .25s both; }
+.table-card { background: #fff; border-radius: 20px; border: 1px solid rgba(0,0,0,.06);  box-shadow: 0 18px 40px rgba(16,24,40,.06); animation: fadeUp .4s ease .25s both; }
 .table-header { padding: 18px 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(0,0,0,.06); flex-wrap: wrap; gap: 12px; }
 .table-header h3 { font-size: 15px; font-weight: 700; color: #101828; }
 .table-subtitle { margin-top: 4px; font-size: 12px; color: #667085; }
@@ -109,8 +112,6 @@ tbody td { padding: 14px 24px; font-size: 13px; color: #344054; }
 	.p-topbar-title span { display: none; }
 	.p-topbar-actions .btn-ghost { display: none; }
 	.search-bar input { width: 130px; }
-	.table-card { border-radius: 14px; overflow-x: auto; }
-	table { min-width: 560px; }
 }
 
 .orc-modal-overlay {
@@ -232,3 +233,29 @@ tbody td { padding: 14px 24px; font-size: 13px; color: #344054; }
 		flex-direction: column;
 	}
 }
+
+
+html,body,#root{
+  overflow-x:hidden;
+}
+
+
+/* ── Mobile improvements ── */
+@media (max-width: 720px) {
+  .stats-row { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+  .p-topbar { padding: 0 16px 0 68px !important; height: 60px !important; }
+  .table-header { flex-direction: column; align-items: stretch; gap: 10px; }
+  .table-header-right { width: 100%; }
+  .search-bar { width: 100% !important; }
+  .search-bar input { width: 100% !important; }
+  .p-topbar-actions .btn-primary { font-size: 12px; padding: 0 14px; height: 36px; }
+}
+
+@media (max-width: 400px) {
+  .stat-card { padding: 12px 10px; gap: 8px; }
+  .stat-icon { width: 32px; height: 32px; font-size: 14px; border-radius: 10px; }
+  .stat-info p { font-size: 9px; }
+  .stat-info strong { font-size: 15px; }
+}
+
+

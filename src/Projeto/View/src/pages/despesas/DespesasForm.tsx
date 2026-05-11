@@ -118,7 +118,6 @@ export default function DespesasForm() {
       const data = await res.json();
 
 if (!res.ok) {
-  console.log("ERRO BACKEND:", data); // 🔥 MOSTRA O MOTIVO
   throw new Error(data.error || "Erro ao salvar");
 }
 
@@ -154,7 +153,6 @@ if (!res.ok) {
       <div className="despesas-page">
         <header className="df-topbar">
           <div className="df-title-block">
-            <span className="df-chip">Financeiro</span>
             <h1>{isEditing ? "Editar despesa" : "Nova despesa"}</h1>
             <p>{isEditing ? "Ajuste os dados deste lançamento" : "Cadastre uma nova despesa com poucos passos"}</p>
           </div>

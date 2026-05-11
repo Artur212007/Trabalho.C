@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+@import "../../styles/modern-admin.css";
 
 * { box-sizing: border-box; }
 
@@ -7,12 +7,12 @@ body {
     padding: 0;
     min-height: 100vh;
     width: 100vw;
-    font-family: "Inter", sans-serif;
+    font-family: 'Poppins', sans-serif;
     background:
-      radial-gradient(circle at top left, rgba(37, 99, 235, 0.08), transparent 28%),
-      radial-gradient(circle at bottom right, rgba(17, 24, 39, 0.05), transparent 25%),
-      #f6f7fb;
-    color: #111827;
+      radial-gradient(circle at top left, rgba(37, 99, 235, 0.06), transparent 32%),
+      radial-gradient(circle at top right, rgba(17, 24, 39, 0.05), transparent 28%),
+      #f7f8fb;
+    color: #101828;
 }
 
 /* ── Layout principal ── */
@@ -34,7 +34,7 @@ body {
     align-items: flex-start;
     width: 60%;
     min-height: 100vh;
-    padding: 56px 60px;
+    padding: 56px 140px;
 }
 
 .logo-branding {
@@ -70,14 +70,14 @@ body {
     font-weight: 700;
     margin: 0 0 16px 0;
     line-height: 1.2;
-    color: #1A1A1A;
+    color: #101828;
 }
 
 .primary-container p {
     font-size: 15px;
     text-align: left;
     line-height: 1.7;
-    color: #6b7280;
+    color: #667085;
     margin: 0;
     max-width: 420px;
 }
@@ -115,13 +115,13 @@ body {
     font-size: 26px;
     font-weight: 700;
     margin: 0 0 6px 0;
-    color: #1A1A1A;
+    color: #101828;
     align-self: flex-start;
 }
 
 .login-container > p {
     font-size: 14px;
-    color: #6b7280;
+    color: #667085;
     margin: 0 0 20px 0;
     align-self: flex-start;
 }
@@ -144,7 +144,7 @@ body {
 }
 
 input::placeholder {
-    color: #9ca3af;
+    color: #98a2b3;
     font-weight: 400;
     font-size: 14px;
 }
@@ -171,13 +171,13 @@ input::placeholder {
     border: none;
     border-radius: 999px;
     background: transparent;
-    color: #6b7280;
+    color: #667085;
     transition: background 0.2s, color 0.2s;
 }
 
 .password-toggle:hover {
     background: rgba(17, 24, 39, 0.06);
-    color: #111827;
+    color: #101828;
 }
 
 .password-toggle svg {
@@ -227,10 +227,7 @@ span a:hover {
     }
 
     .primary-container {
-        width: 100%;
-        min-height: auto;
-        padding: 36px 24px 24px;
-        justify-content: flex-start;
+        display: none;
     }
 
     .primary-container h1 {
@@ -250,9 +247,12 @@ span a:hover {
         width: 100%;
         min-height: auto;
         padding: 24px 24px 40px;
+        margin: 0 auto;
         border-left: none;
-        border-top: 1px solid rgba(0, 0, 0, 0.08);
         justify-content: flex-start;
+    }
+    .login-container-signup {
+        margin-top: 20%;
     }
 
     .login-form {
@@ -298,3 +298,8 @@ span a:hover {
         font-size: 16px;
     }
 }
+
+html,body,#root{
+  overflow-x:hidden;
+}
+

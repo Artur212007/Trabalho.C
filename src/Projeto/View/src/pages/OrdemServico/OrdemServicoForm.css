@@ -1,3 +1,5 @@
+@import "../../styles/modern-admin.css";
+
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -104,7 +106,6 @@
   .p-content .form-card > div[style] { flex-direction: column-reverse; }
   .p-content .form-card > div[style] .btn { width: 100%; justify-content: center; }
 }
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -369,3 +370,8 @@
   .pf-footer .btn-ghost { width: 100%; justify-content: center; }
   .pf-back span { display: none; }
 }
+
+html,body,#root{
+  overflow-x:hidden;
+}
+

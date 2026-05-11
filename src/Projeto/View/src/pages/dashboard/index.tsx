@@ -6,14 +6,6 @@ import "./dashboard.css";
 
 const API = "http://localhost:3001/api"; // ✅ Adicionado /api
 
-const today = new Date().toLocaleDateString("pt-BR", {
-  weekday: "long",
-  day: "numeric",
-  month: "long",
-});
-
-const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
-
 function fmt(valor: number) {
   return "R$ " + valor.toLocaleString("pt-BR", {
     minimumFractionDigits: 2,
@@ -116,10 +108,10 @@ export function Dashboard() {
   };
 
   return (
-    <div className="dashboard-container">
+    <div className="dashboard-wrapper dashboard-container">
       <Sidebar />
 
-      <main className="dashboard-content">
+      <main className="dashboard-page dashboard-content">
 
         {/* ── Top bar ── */}
         <header className="dashboard-topbar">
@@ -131,8 +123,6 @@ export function Dashboard() {
             </div>
           </div>
           <div className="topbar-right">
-            <span className="topbar-date">{capitalize(today)}</span>
-            <div className="topbar-divider" />
             <button onClick={handleLogout} className="btn-logout" title="Sair">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:15,height:15}}>
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
@@ -170,62 +160,48 @@ export function Dashboard() {
 
             <div className="card" style={{"--card-accent":"#FFD100","--icon-bg":"#FFF9E6"} as React.CSSProperties}>
               <div className="card-header">
-                <h3>Vendas do Dia</h3>
                 <div className="card-icon"><IconMoney /></div>
+                <h3>Vendas do Dia</h3>
               </div>
               {carregando ? <p style={{color:"#9ca3af",fontSize:20}}>...</p> : (
                 <>
                   <p>{dados ? fmt(dados.vendas_dia) : "R$ 0,00"}</p>
-                  <span className={`card-trend ${dados && dados.qtd_vendas_dia > 0 ? "up" : "neutral"}`}>
-                    {dados && dados.qtd_vendas_dia > 0
-                      ? `↑ ${dados.qtd_vendas_dia} venda${dados.qtd_vendas_dia > 1 ? "s" : ""} hoje`
-                      : "Nenhuma venda hoje"}
-                  </span>
                 </>
               )}
             </div>
 
             <div className="card" style={{"--card-accent":"#3B82F6","--icon-bg":"#EFF6FF"} as React.CSSProperties}>
               <div className="card-header">
-                <h3>Ordens de Serviço</h3>
                 <div className="card-icon"><IconTool /></div>
+                <h3>Ordens de Serviço</h3>
               </div>
               {carregando ? <p style={{color:"#9ca3af",fontSize:20}}>...</p> : (
                 <>
                   <p>{dados?.ordens_abertas ?? 0}</p>
-                  <span className="card-trend neutral">
-                    {dados && dados.ordens_abertas > 0 ? "abertas agora" : "Nenhuma ordem aberta"}
-                  </span>
                 </>
               )}
             </div>
 
             <div className="card" style={{"--card-accent":"#10B981","--icon-bg":"#ECFDF5"} as React.CSSProperties}>
               <div className="card-header">
-                <h3>Clientes</h3>
                 <div className="card-icon"><IconUsers /></div>
+                <h3>Clientes</h3>
               </div>
               {carregando ? <p style={{color:"#9ca3af",fontSize:20}}>...</p> : (
                 <>
                   <p>{dados?.total_clientes ?? 0}</p>
-                  <span className="card-trend neutral">
-                    {dados && dados.total_clientes > 0 ? "clientes ativos" : "Nenhum cliente cadastrado"}
-                  </span>
                 </>
               )}
             </div>
 
             <div className="card" style={{"--card-accent":"#8B5CF6","--icon-bg":"#F5F3FF"} as React.CSSProperties}>
               <div className="card-header">
-                <h3>Produtos em Estoque</h3>
                 <div className="card-icon"><IconBox /></div>
+                <h3>Produtos em Estoque</h3>
               </div>
               {carregando ? <p style={{color:"#9ca3af",fontSize:20}}>...</p> : (
                 <>
                   <p>{dados?.total_estoque ?? 0}</p>
-                  <span className="card-trend neutral">
-                    {dados && dados.total_estoque > 0 ? "unidades em estoque" : "Nenhum produto no estoque"}
-                  </span>
                 </>
               )}
             </div>
@@ -284,7 +260,7 @@ export function Dashboard() {
               <div className="quick-access">
                 {[
                   { icon:<IconUsers />, label:"Novo Cliente",        sub:"Cadastrar cliente",    to:"/clientes/novo" },
-                  { icon:<IconTool />, label:"Nova Ordem",          sub:"Criar O.S.",            to:"/ordens/novo" },
+                  { icon:<IconTool />, label:"Nova Ordem",          sub:"Criar O.S.",            to:"/ordem/novo" },
                   { icon:<IconBox />, label:"Gerenciar Produtos",  sub:"Estoque e preços",      to:"/produtos" },
                   { icon:<IconCard />, label:"Fluxo de Caixa",      sub:"Receitas e despesas",   to:"/caixa" },
                   { icon:<IconUsers />, label:"Funcionários",        sub:"Gerenciar acessos",     to:"/funcionarios" },

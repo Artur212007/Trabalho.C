@@ -1,3 +1,6 @@
+/* Panel/table styles moved to data-panel.css */
+@import "../../styles/modern-admin.css";
+
 .mov-wrapper {
   min-height: 100vh;
   display: flex;
@@ -377,3 +380,8 @@
     padding: 14px 12px;
   }
 }
+
+html,body,#root{
+  overflow-x:hidden;
+}
+

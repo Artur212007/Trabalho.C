@@ -3,6 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { Sidebar } from "../../components/sidebar";
 import { IconAlert, IconBox, IconBuilding, IconClock, IconMoney } from "../../components/ui/icons";
 import "./Produtos.css";
+import "../../styles/data-panel.css";
+import ConfirmDialog from "../../components/ui/ConfirmDialog";
+import { formatCurrency } from "../../utils/format";
 
 const API = "http://localhost:3001/api";
 
@@ -22,9 +25,7 @@ interface Produto {
 
 const TIPOS: Record<Tipo, string> = { 1: "Ferramenta", 2: "Peça", 3: "Acessório" };
 
-function fmt(v: number) {
-  return "R$ " + v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
+function fmt(v: number) { return formatCurrency(v); }
 
 function getStatus(p: Produto): { label: string; cls: string } {
   if (p.quantidade_estoque <= 0)                      return { label: "Sem estoque", cls: "badge-low" };
@@ -180,9 +181,9 @@ export default function Produtos() {
       <Sidebar />
       <div className="produtos-page">
         <header className="p-topbar">
-          <div className="p-topbar-title">Produtos <span>Vitrine</span></div>
+          <div className="p-topbar-title">Produtos</div>
           <div className="p-topbar-actions">
-            <button className="btn btn-ghost" onClick={exportCSV}><IconDown /> Exportar</button>
+            
             <button className="btn btn-primary" onClick={() => navigate("/produtos/novo")}>
               <IconPlus /> Novo Produto
             </button>
@@ -197,15 +198,15 @@ export default function Produtos() {
             <div className="stat-card"><div className="stat-icon si-blue"><IconBuilding /></div><div className="stat-info"><p>Fornecedores</p><strong>{stats.fornecedores}</strong></div></div>
           </div>
 
-          <div className="table-card">
-            <div className="table-header">
+          <div className="data-panel">
+            <div className="dp-header">
               <h3>Cadastro de Produtos</h3>
-              <div className="table-header-right">
-                <div className="search-bar">
+              <div className="dp-header-right">
+                <div className="dp-search">
                   <IconSearch />
                   <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar produto..." />
                 </div>
-                <select className="filter-select" value={filterTipo} onChange={e => setFilterTipo(e.target.value)}>
+                <select className="dp-select" value={filterTipo} onChange={e => setFilterTipo(e.target.value)}>
                   <option value="">Todos os tipos</option>
                   <option value="1">Ferramenta</option>
                   <option value="2">Peça</option>
@@ -215,17 +216,17 @@ export default function Produtos() {
             </div>
 
             {loading ? (
-              <div className="empty-state"><div className="big-icon"><IconClock style={{ width: 32, height: 32 }} /></div><p>Carregando produtos...</p></div>
+              <div className="dp-empty"><div className="dp-empty-icon"><IconClock style={{ width: 32, height: 32 }} /></div><p>Carregando produtos...</p></div>
             ) : lista.length === 0 ? (
-              <div className="empty-state">
-                <div className="big-icon"><IconBox style={{ width: 32, height: 32 }} /></div>
+              <div className="dp-empty">
+                <div className="dp-empty-icon"><IconBox style={{ width: 32, height: 32 }} /></div>
                 <p>Nenhum produto encontrado.<br />Clique em <strong>Novo Produto</strong> para cadastrar.</p>
               </div>
             ) : (
-              <table>
+              <div className="dp-table-wrap"><table className="dp-table">
                 <thead>
                   <tr>
-                    <th>ID</th><th>Produto</th><th>Tipo</th>
+                    <th>Produto</th><th>Tipo</th>
                     <th>Preço Venda</th>
                     <th>Estoque</th>
                     <th>Status</th><th>Ações</th>
@@ -236,23 +237,22 @@ export default function Produtos() {
                     const st = getStatus(p);
                     return (
                       <tr key={p.id}>
-                        <td className="td-id">#{p.id}</td>
-                        <td className="td-nome">{p.nome}</td>
-                        <td>{TIPOS[p.tipo]}</td>
-                        <td><strong>{fmt(p.preco_venda)}</strong></td>
-                        <td>{p.quantidade_estoque}</td>
-                        <td><span className={`badge ${st.cls}`}>{st.label}</span></td>
+                        <td className="dp-cell-muted">{p.nome}</td>
+                        <td data-label="Tipo">{TIPOS[p.tipo]}</td>
+                        <td data-label="Preço"><strong>{fmt(p.preco_venda)}</strong></td>
+                        <td data-label="Estoque">{p.quantidade_estoque}</td>
+                        <td data-label="Status"><span className={`badge ${st.cls}`}>{st.label}</span></td>
                         <td>
-                          <div className="row-actions">
+                          <div className="dp-row-actions">
                             <button 
-                              className="icon-btn edit" 
+                              className="dp-btn-icon dp-edit" 
                               title="Editar" 
                               onClick={() => navigate(`/produtos/editar/${p.id}`)}
                             >
                               <IconEdit />
                             </button>
                             <button 
-                              className="icon-btn del" 
+                              className="dp-btn-icon dp-del" 
                               title="Excluir" 
                               onClick={() => setConfirmId(p.id)}
                             >
@@ -264,35 +264,22 @@ export default function Produtos() {
                     );
                   })}
                 </tbody>
-              </table>
+              </table></div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Modal de confirmação */}
-      <div 
-        className={`confirm-overlay${confirmId !== null ? " open" : ""}`} 
-        onClick={handleCloseModal}
-      >
-        <div className="confirm-box" onClick={e => e.stopPropagation()}>
-          <div className="confirm-icon"><IconTrash /></div>
-          <h3>Excluir este produto?</h3>
-          <p>"{confirmProduto?.nome || 'Produto'}" será removido permanentemente.</p>
-          <div className="confirm-actions">
-            <button className="btn btn-ghost" onClick={handleCloseModal}>
-              Cancelar
-            </button>
-            <button 
-              className="btn btn-danger" 
-              onClick={handleDelete} 
-              disabled={deleting}
-            >
-              {deleting ? "Excluindo..." : "Sim, excluir"}
-            </button>
-          </div>
-        </div>
-      </div>
+      <ConfirmDialog
+        open={confirmId !== null}
+        title="Excluir este produto?"
+        message={<>"{confirmProduto?.nome || 'Produto'}" será removido permanentemente.</>}
+        confirmLabel={deleting ? "Excluindo..." : "Sim, excluir"}
+        variant="danger"
+        loading={deleting}
+        onConfirm={handleDelete}
+        onCancel={handleCloseModal}
+      />
 
       <div className={`toast${toast.visible ? " show" : ""}`}>
         <span className={`toast-dot ${toast.type}`} />

@@ -13,7 +13,7 @@ function apenasVendedor(req, res, next) {
 
 // ─── CLIENTES ───────────────────────────────────────────
 
-// Listar todos os clientes ativos
+// Listar todos os 
 router.get('/clientes', auth, apenasVendedor, async (req, res) => {
   try {
     const [rows] = await db.query(

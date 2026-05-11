@@ -3,6 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { Sidebar } from "../../components/sidebar";
 import { IconAlert, IconCard, IconCheck, IconClock, IconDown, IconEdit, IconMoney, IconPlus, IconSearch, IconTrash } from "../../components/ui/icons";
 import "./FluxoCaixa.css";
+import "../../styles/data-panel.css";
+import ConfirmDialog from "../../components/ui/ConfirmDialog";
+import { formatDate as fmtDate } from "../../utils/format";
 
 const API = "http://localhost:3001/api";
 
@@ -68,8 +71,8 @@ export default function FluxoCaixa() {
         id_caixa: c.id_caixa,
         data: c.data,
         valor_abertura: parseFloat(c.valor_abertura) || 0,
-        valor_fechamento: c.valor_fechamento ? parseFloat(c.valor_fechamento) : null,
-        saldo: parseFloat(c.saldo) || 0,
+        valor_fechamento: c.valor_fechamento != null ? parseFloat(c.valor_fechamento) : null,
+        saldo: parseFloat(c.saldo_atual) || 0,
         id_funcionario: c.id_funcionario,
         funcionario_nome: c.funcionario_nome || `ID: ${c.id_funcionario}`,
       })) : []);
@@ -101,6 +104,8 @@ export default function FluxoCaixa() {
       aberturaTotal,
     };
   }, [caixas]);
+
+  const hasOpenCaixa = stats.abertos > 0;
 
   const lista = useMemo(() =>
     caixas.filter(c => {
@@ -176,10 +181,17 @@ export default function FluxoCaixa() {
             Fluxo de Caixa <span>Registros</span>
           </div>
           <div className="p-topbar-actions">
-            <button className="btn btn-ghost" onClick={exportCSV}>
-              <IconDown /> Exportar
-            </button>
-            <button className="btn btn-primary" onClick={() => navigate("/caixa/novo")}>
+<button
+              className="btn btn-primary"
+              onClick={() => {
+                if (hasOpenCaixa) {
+                  showToast("Já existe um caixa aberto. Feche-o antes de abrir outro.", "err");
+                  return;
+                }
+                navigate("/caixa/novo");
+              }}
+              title={hasOpenCaixa ? "Existe caixa aberto" : "Novo registro"}
+            >
               <IconPlus /> Novo Registro
             </button>
           </div>
@@ -217,11 +229,11 @@ export default function FluxoCaixa() {
             </div>
           </div>
 
-          <div className="table-card">
-            <div className="table-header">
+          <div className="data-panel">
+            <div className="dp-header">
               <h3>Registros de Fluxo de Caixa</h3>
-              <div className="table-header-right">
-                <div className="search-bar">
+              <div className="dp-header-right">
+                <div className="dp-search">
                   <IconSearch />
                   <input 
                     type="text" 
@@ -234,23 +246,22 @@ export default function FluxoCaixa() {
             </div>
 
             {loading ? (
-              <div className="empty-state">
-                <div className="big-icon"><IconClock style={{ width: 32, height: 32 }} /></div>
+              <div className="dp-empty">
+                <div className="dp-empty-icon"><IconClock style={{ width: 32, height: 32 }} /></div>
                 <p>Carregando registros...</p>
               </div>
             ) : lista.length === 0 ? (
-              <div className="empty-state">
-                <div className="big-icon"><IconMoney style={{ width: 32, height: 32 }} /></div>
+              <div className="dp-empty">
+                <div className="dp-empty-icon"><IconMoney style={{ width: 32, height: 32 }} /></div>
                 <p>
                   Nenhum registro de caixa encontrado.<br />
                   Clique em <strong>Novo Registro</strong> para iniciar um novo caixa.
                 </p>
               </div>
             ) : (
-              <table className="fornecedores-table">
+              <div className="dp-table-wrap"><table className="dp-table">
                 <thead>
                   <tr>
-                    <th>ID</th>
                     <th>Data</th>
                     <th>Valor Abertura</th>
                     <th>Valor Fechamento</th>
@@ -263,32 +274,31 @@ export default function FluxoCaixa() {
                 <tbody>
                   {lista.map(c => (
                     <tr key={c.id_caixa}>
-                      <td className="td-id">#{c.id_caixa}</td>
-                      <td className="td-nome">{formatDate(c.data)}</td>
-                      <td className="td-dim">{formatCurrency(c.valor_abertura)}</td>
-                      <td className="td-dim">
+                      <td className="dp-cell-muted">{formatDate(c.data)}</td>
+                      <td className="dp-cell-muted" data-label="Abertura">{formatCurrency(c.valor_abertura)}</td>
+                      <td className="dp-cell-muted" data-label="Fechamento">
                         {c.valor_fechamento ? formatCurrency(c.valor_fechamento) : "—"}
                       </td>
-                      <td className={`td-saldo ${c.saldo >= 0 ? 'positive' : 'negative'}`}>
+                      <td className={`td-saldo ${c.saldo >= 0 ? 'positive' : 'negative'}`} data-label="Saldo">
                         {formatCurrency(c.saldo)}
                       </td>
-                      <td className="td-dim">{c.funcionario_nome || `ID: ${c.id_funcionario}`}</td>
+                      <td className="dp-cell-muted" data-label="Funcionário">{c.funcionario_nome || `ID: ${c.id_funcionario}`}</td>
                       <td>
                         <span className={`status-badge ${c.valor_fechamento === null ? 'status-open' : 'status-closed'}`}>
                           {c.valor_fechamento === null ? 'Aberto' : 'Fechado'}
                         </span>
                       </td>
                       <td>
-                        <div className="row-actions">
+                        <div className="dp-row-actions">
                           <button 
-                            className="icon-btn edit" 
+                            className="dp-btn-icon dp-edit" 
                             title="Editar" 
                             onClick={() => navigate(`/caixa/editar/${c.id_caixa}`)}
                           >
                             <IconEdit />
                           </button>
                           <button 
-                            className="icon-btn del" 
+                            className="dp-btn-icon dp-del" 
                             title="Remover" 
                             onClick={() => setConfirmId(c.id_caixa)}
                           >
@@ -299,38 +309,24 @@ export default function FluxoCaixa() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></div>
             )}
           </div>
         </div>
       </div>
 
-      {/* MODAL DE CONFIRMAÇÃO */}
-      <div 
-        className={`modal-overlay${confirmId !== null ? " open" : ""}`} 
-        onClick={handleCloseModal}
-      >
-        <div className="confirm-modal" onClick={e => e.stopPropagation()}>
-          <div className="danger-icon"><IconTrash /></div>
-          <h3>Remover registro de caixa?</h3>
-          <p>
-            Registro do dia <strong>{confirmCaixa ? formatDate(confirmCaixa.data) : ''}</strong> 
-            {" "}será removido permanentemente do sistema.
-          </p>
-          <div className="confirm-actions">
-            <button className="btn btn-ghost" onClick={handleCloseModal}>
-              Cancelar
-            </button>
-            <button 
-              className="btn btn-danger" 
-              onClick={handleDelete} 
-              disabled={deleting}
-            >
-              {deleting ? "Removendo..." : "Sim, remover"}
-            </button>
-          </div>
-        </div>
-      </div>
+      <ConfirmDialog
+        open={confirmId !== null}
+        title="Remover registro de caixa?"
+        message={
+          <>Registro do dia <strong>{confirmCaixa ? fmtDate(confirmCaixa.data) : ''}</strong> será removido permanentemente.</>
+        }
+        confirmLabel={deleting ? "Removendo..." : "Sim, remover"}
+        variant="danger"
+        loading={deleting}
+        onConfirm={handleDelete}
+        onCancel={handleCloseModal}
+      />
 
       <div className={`toast${toast.visible ? " show" : ""}`}>
         <span className={`toast-dot ${toast.type}`} />

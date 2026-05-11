@@ -1,325 +1,169 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Sidebar } from "../../components/sidebar/";
-import { IconBox, IconClock } from "../../components/ui/icons";
+import { Sidebar } from "../../components/sidebar";
 import "./ProdutoForm.css";
 
 const API = "http://localhost:3001/api";
 
-type Tipo = 1 | 2 | 3;
-
-interface FormData {
-  nome: string;
-  tipo: Tipo;
-  preco_custo: number;
-  preco_venda: number;
-  quantidade_estoque: number;
-  estoque_minimo: number;
-  garantia: number;
-  id_fornecedor: number;
-}
-
-const EMPTY: FormData = {
-  nome: "", tipo: 1, preco_custo: 0, preco_venda: 0,
-  quantidade_estoque: 0, estoque_minimo: 5, garantia: 0, id_fornecedor: 1,
-};
-
-// ============================================
-// ÍCONES SVG
-// ============================================
-const IconArrow = () => (
-  <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-    <line x1="19" y1="12" x2="5" y2="12" />
-    <polyline points="12 19 5 12 12 5" />
-  </svg>
-);
-
-const IconCheck = () => (
-  <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-    <polyline points="20 6 9 17 4 12" />
-  </svg>
-);
-
-const IconTrash = () => (
-  <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-    <polyline points="3 6 5 6 21 6" />
-    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-    <path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" />
-  </svg>
-);
-// ============================================
-
-// Função auxiliar para pegar token
-const getToken = () => localStorage.getItem('token');
-
-// Função para fazer fetch com token
-async function fetchWithAuth(url: string, options: RequestInit = {}) {
-  const token = getToken();
-  return fetch(url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-      ...options.headers,
-    },
-  });
-}
-
 export default function ProdutoForm() {
   const navigate = useNavigate();
-  const { id } = useParams<{ id?: string }>();
-  const isEdit = Boolean(id);
+  const { id } = useParams();
 
-  const [form, setForm] = useState<FormData>(EMPTY);
+  const [fornecedores, setFornecedores] = useState<any[]>([]);
+
+  const [nome, setNome] = useState("");
+  const [precoCusto, setPrecoCusto] = useState("");
+  const [precoVenda, setPrecoVenda] = useState("");
+  const [quantidadeEstoque, setQuantidadeEstoque] = useState("");
+  const [estoqueMinimo, setEstoqueMinimo] = useState("");
+  const [garantia, setGarantia] = useState("");
+  const [idFornecedor, setIdFornecedor] = useState("");
+  const [tipo, setTipo] = useState("1");
+
   const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [confirm, setConfirm] = useState(false);
-  const [toast, setToast] = useState<{ msg: string; type: "ok" | "err" | "del"; visible: boolean }>({ msg: "", type: "ok", visible: false });
-  const [precoCustoDisplay, setPrecoCustoDisplay] = useState("");
-  const [precoVendaDisplay, setPrecoVendaDisplay] = useState("");
-
-  function showToast(msg: string, type: "ok" | "err" | "del" = "ok") {
-    setToast({ msg, type, visible: true });
-    setTimeout(() => setToast(t => ({ ...t, visible: false })), 3000);
-  }
-
-  function formatPreco(value: string): { display: string; numeric: number } {
-    const digits = value.replace(/\D/g, "");
-    const numeric = Number(digits) / 100;
-    const display = numeric.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    return { display, numeric };
-  }
 
   useEffect(() => {
-    if (!isEdit) return;
-    setLoading(true);
-    
-    fetchWithAuth(`${API}/produtos/${id}`)
-      .then(r => {
-        if (!r.ok) throw new Error('Erro ao carregar produto');
-        return r.json();
-      })
-      .then(p => {
-        const custo = p.preco_custo;
-        const venda = p.preco_venda;
-        
-        setForm({
-          nome: p.nome,
-          tipo: p.tipo,
-          preco_custo: custo,
-          preco_venda: venda,
-          quantidade_estoque: p.quantidade_estoque,
-          estoque_minimo: p.estoque_minimo,
-          garantia: p.garantia,
-          id_fornecedor: p.id_fornecedor,
-        });
-        setPrecoCustoDisplay(custo.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-        setPrecoVendaDisplay(venda.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-      })
-      .catch(() => showToast("Erro ao carregar produto.", "err"))
-      .finally(() => setLoading(false));
+    fetchFornecedores();
+    if (id) fetchProduto();
   }, [id]);
 
-  function set(key: keyof FormData, val: string | number) {
-    setForm(f => ({ ...f, [key]: val }));
-  }
-
-  async function handleSave() {
-  if (!form.nome.trim()) { showToast("Informe o nome do produto.", "err"); return; }
-  if (!form.preco_custo || form.preco_custo <= 0) { showToast("Informe o preço de custo do produto.", "err"); return; }
-  if (!form.preco_venda || form.preco_venda <= 0) { showToast("Informe o preço de venda do produto.", "err"); return; }
-  if (!form.id_fornecedor || form.id_fornecedor <= 0) { showToast("Informe o fornecedor do produto.", "err"); return; }
-  
-  setSaving(true);
-  
-  const body = {
-    nome: form.nome,
-    tipo: form.tipo,
-    preco_custo: form.preco_custo,
-    preco_venda: form.preco_venda,
-    quantidade_estoque: form.quantidade_estoque,
-    estoque_minimo: form.estoque_minimo,
-    garantia: form.garantia,
-    id_fornecedor: form.id_fornecedor,
-  };
-  
-  try {
-    const url = isEdit ? `${API}/produtos/${id}` : `${API}/produtos`;
-    const method = isEdit ? "PUT" : "POST";
-
-    const res = await fetchWithAuth(url, { method, body: JSON.stringify(body) });
-
-    if (!res.ok) {
-      const contentType = res.headers.get("content-type") || "";
-      let errorMessage = "Erro ao salvar";
-
-      if (contentType.includes("application/json")) {
-        const errorData = await res.json().catch(() => ({}));
-        errorMessage = errorData.error || errorData.erro || errorMessage;
-      } else {
-        errorMessage = await res.text();
-      }
-
-      if (res.status === 401) {
-        errorMessage = "Sessão expirada ou inválida. Faça login novamente.";
-      }
-
-      throw new Error(errorMessage || 'Erro ao salvar');
-    }
-    
-    showToast(isEdit ? "Produto atualizado com sucesso!" : "Produto cadastrado com sucesso!");
-    setTimeout(() => navigate("/produtos"), 1200);
-  } catch (err) {
-    console.error('❌ Erro completo:', err);
-    showToast(err instanceof Error ? err.message : "Erro ao salvar. Verifique os dados.", "err");
-  } finally {
-    setSaving(false);
-  }
-}
-
-  async function handleDelete() {
-    setDeleting(true);
+  async function fetchFornecedores() {
     try {
-      const res = await fetchWithAuth(`${API}/produtos/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error(await res.text());
-      showToast("Produto excluído com sucesso!", "del");
-      setTimeout(() => navigate("/produtos"), 1200);
-    } catch (err) {
-      console.error(err);
-      showToast("Erro ao excluir produto.", "err");
-    } finally {
-      setDeleting(false);
-      setConfirm(false);
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API}/fornecedores`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setFornecedores(await res.json());
+    } catch { alert("Erro ao carregar fornecedores"); }
+  }
+
+  async function fetchProduto() {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API}/produtos/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) { alert("Erro ao carregar produto"); return; }
+      const d = await res.json();
+      setNome(d.nome || "");
+      setPrecoCusto(String(d.preco_custo ?? ""));
+      setPrecoVenda(String(d.preco_venda ?? ""));
+      setQuantidadeEstoque(String(d.quantidade_estoque ?? ""));
+      setEstoqueMinimo(String(d.estoque_minimo ?? ""));
+      setGarantia(String(d.garantia ?? ""));
+      setIdFornecedor(String(d.id_fornecedor ?? ""));
+      setTipo(String(d.tipo ?? "1"));
+    } catch { alert("Erro ao carregar produto"); }
+  }
+
+  async function salvar(e: any) {
+    e.preventDefault();
+    if (!nome || !precoVenda || !idFornecedor) {
+      alert("Nome, preço de venda e fornecedor são obrigatórios");
+      return;
     }
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("token");
+      const payload = {
+        nome,
+        preco_custo: Number(precoCusto || 0),
+        preco_venda: Number(precoVenda || 0),
+        quantidade_estoque: Number(quantidadeEstoque || 0),
+        estoque_minimo: Number(estoqueMinimo || 0),
+        garantia: Number(garantia || 0),
+        id_fornecedor: Number(idFornecedor),
+        tipo: Number(tipo || 1),
+      };
+      const res = await fetch(
+        id ? `${API}/produtos/${id}` : `${API}/produtos`,
+        {
+          method: id ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify(payload),
+        }
+      );
+      if (!res.ok) { const e = await res.json(); alert(e.error || "Erro ao salvar"); return; }
+      alert("Salvo com sucesso!");
+      navigate("/produtos");
+    } catch { alert("Erro ao salvar"); }
+    finally { setLoading(false); }
   }
 
   return (
-    <div className="pf-wrapper">
+    <div className="funcionarios-wrapper">
       <Sidebar />
-
-      <div className="pf-page">
-        <div className="pf-header">
-          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-            <button className="btn btn-back pf-back" onClick={() => navigate("/produtos")}>
-              <IconArrow /> <span>Voltar</span>
-            </button>
-            <div className="pf-title-block">
-              <h1>{isEdit ? "Editar Produto" : "Novo Produto"}</h1>
-              <p>{isEdit ? "Atualize as informações do produto" : "Preencha os dados para cadastrar um novo produto"}</p>
-            </div>
+      <div className="funcionarios-page">
+        <header className="p-topbar">
+          <div className="p-topbar-title">{id ? "Editar Produto" : "Novo Produto"}</div>
+          <div className="p-topbar-actions">
+            <button type="button" className="btn btn-back" onClick={() => navigate("/produtos")}>Voltar</button>
           </div>
-          {isEdit && (
-            <div className="pf-header-actions">
-              <button className="btn btn-danger" onClick={() => setConfirm(true)}>
-                <IconTrash /> Excluir Produto
+        </header>
+
+        <div className="p-content">
+          <form className="form-card" onSubmit={salvar}>
+            <h3 style={{ marginBottom: 16, fontSize: 15, fontWeight: 500 }}>Dados do Produto</h3>
+
+            <div className="form-grid">
+              <div className="full">
+                <label>Nome *</label>
+                <input value={nome} onChange={e => setNome(e.target.value)} placeholder="Ex: Furadeira Elétrica" />
+              </div>
+
+              <div>
+                <label>Preço de custo</label>
+                <input type="number" step="0.01" value={precoCusto} onChange={e => setPrecoCusto(e.target.value)} placeholder="0,00" />
+              </div>
+
+              <div>
+                <label>Preço de venda *</label>
+                <input type="number" step="0.01" value={precoVenda} onChange={e => setPrecoVenda(e.target.value)} placeholder="0,00" />
+              </div>
+
+              <div>
+                <label>Quantidade em estoque</label>
+                <input type="number" value={quantidadeEstoque} onChange={e => setQuantidadeEstoque(e.target.value)} placeholder="0" />
+              </div>
+
+              <div>
+                <label>Estoque mínimo</label>
+                <input type="number" value={estoqueMinimo} onChange={e => setEstoqueMinimo(e.target.value)} placeholder="0" />
+              </div>
+
+              <div>
+                <label>Garantia (meses)</label>
+                <input type="number" value={garantia} onChange={e => setGarantia(e.target.value)} placeholder="12" />
+              </div>
+
+              <div>
+                <label>Tipo</label>
+                <select value={tipo} onChange={e => setTipo(e.target.value)}>
+                  <option value="1">Ferramenta</option>
+                  <option value="2">Peça</option>
+                  <option value="3">Acessório</option>
+                </select>
+              </div>
+
+              <div className="full">
+                <label>Fornecedor *</label>
+                <select value={idFornecedor} onChange={e => setIdFornecedor(e.target.value)}>
+                  <option value="">Selecione</option>
+                  {fornecedores.map((f: any) => (
+                    <option key={f.id_fornecedor} value={f.id_fornecedor}>{f.nome}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="form-actions">
+              <button type="button" className="btn btn-ghost" onClick={() => navigate("/produtos")}>Cancelar</button>
+              <button className="btn btn-primary" disabled={loading}>
+                {loading ? "Salvando..." : "Salvar Produto"}
               </button>
             </div>
-          )}
+          </form>
         </div>
-
-        <div className="pf-card">
-          <div className="pf-card-header">
-            <div className="pf-card-icon"><IconBox /></div>
-            <div>
-              <h2>{isEdit ? "Editar Produto" : "Cadastro de Produto"}</h2>
-              <p>{isEdit ? `Editando produto #${id}` : "Preencha todos os campos obrigatórios"}</p>
-            </div>
-          </div>
-
-          {loading ? (
-            <div className="pf-loading"><IconClock style={{ width: 16, height: 16, marginRight: 8 }} /> Carregando dados do produto...</div>
-          ) : (
-            <div className="pf-form">
-              <div className="pf-section-title">Identificação</div>
-              <div className="pf-grid">
-                <div className="pf-field pf-full">
-                  <label>Nome do Produto *</label>
-                  <input value={form.nome} onChange={e => set("nome", e.target.value)} placeholder="Ex: Furadeira de Impacto 750W" />
-                </div>
-                <div className="pf-field">
-                  <label>Tipo</label>
-                  <select value={form.tipo} onChange={e => set("tipo", Number(e.target.value) as Tipo)}>
-                    <option value={1}>Ferramenta</option>
-                    <option value={2}>Peça</option>
-                    <option value={3}>Acessório</option>
-                  </select>
-                </div>
-                <div className="pf-field">
-                  <label>Garantia (meses)</label>
-                  <input type="number" min={0} value={form.garantia || ""} onChange={e => set("garantia", Number(e.target.value))} placeholder="12" />
-                </div>
-              </div>
-
-              <div className="pf-section-title">Preços</div>
-              <div className="pf-grid">
-                <div className="pf-field price">
-                  <label>Preço de Custo (R$) *</label>
-                  <input
-                    type="text"
-                    value={precoCustoDisplay}
-                    onChange={e => { const { display, numeric } = formatPreco(e.target.value); setPrecoCustoDisplay(display); set("preco_custo", numeric); }}
-                    placeholder="0,00"
-                  />
-                </div>
-                <div className="pf-field price">
-                  <label>Preço de Venda (R$) *</label>
-                  <input
-                    type="text"
-                    value={precoVendaDisplay}
-                    onChange={e => { const { display, numeric } = formatPreco(e.target.value); setPrecoVendaDisplay(display); set("preco_venda", numeric); }}
-                    placeholder="0,00"
-                  />
-                </div>
-              </div>
-
-              <div className="pf-section-title">Estoque</div>
-              <div className="pf-grid cols-3">
-                <div className="pf-field">
-                  <label>Quantidade em Estoque</label>
-                  <input type="number" min={0} value={form.quantidade_estoque || ""} onChange={e => set("quantidade_estoque", Number(e.target.value))} placeholder="0" />
-                </div>
-                <div className="pf-field">
-                  <label>Estoque Mínimo</label>
-                  <input type="number" min={0} value={form.estoque_minimo || ""} onChange={e => set("estoque_minimo", Number(e.target.value))} placeholder="5" />
-                </div>
-                <div className="pf-field">
-                  <label>ID do Fornecedor *</label>
-                  <input type="number" min={1} value={form.id_fornecedor || ""} onChange={e => set("id_fornecedor", Number(e.target.value))} placeholder="1" />
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="pf-footer">
-            <button className="btn btn-ghost" onClick={() => navigate("/produtos")}>Cancelar</button>
-            <div className="pf-footer-right">
-              <button className="btn btn-primary" onClick={handleSave} disabled={saving || loading}>
-                <IconCheck />
-                {saving ? "Salvando..." : isEdit ? "Salvar Alterações" : "Cadastrar Produto"}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className={`confirm-overlay${confirm ? " open" : ""}`} onClick={e => { if ((e.target as HTMLElement).classList.contains("confirm-overlay")) setConfirm(false); }}>
-        <div className="confirm-box">
-          <div className="confirm-icon"><IconTrash /></div>
-          <h3>Excluir este produto?</h3>
-          <p>Esta ação é permanente e não pode ser desfeita. O produto será removido do sistema.</p>
-          <div className="confirm-actions">
-            <button className="btn btn-ghost" onClick={() => setConfirm(false)}>Cancelar</button>
-            <button className="btn btn-danger" onClick={handleDelete} disabled={deleting}>
-              {deleting ? "Excluindo..." : "Sim, excluir"}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className={`toast${toast.visible ? " show" : ""}`}>
-        <span className={`toast-dot ${toast.type}`} />
-        <span>{toast.msg}</span>
       </div>
     </div>
   );

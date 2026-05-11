@@ -8,8 +8,8 @@ const { err400, err404, err500, ok } = require('../helpers/Response');
 router.get('/', auth, async (req, res) => {
   try {
     const sql = req.query.cargo
-      ? `SELECT id_funcionario,nome,cargo FROM funcionario WHERE cargo=?`
-      : `SELECT id_funcionario,nome,cargo FROM funcionario`;
+      ? `SELECT f.id_funcionario,f.nome,f.cargo,f.salario,f.percentual_comissao,f.ativo,n.nome AS nome_cargo FROM funcionario f LEFT JOIN nivel_acesso n ON n.id_nivel_acesso=f.cargo WHERE f.cargo=?`
+      : `SELECT f.id_funcionario,f.nome,f.cargo,f.salario,f.percentual_comissao,f.ativo,n.nome AS nome_cargo FROM funcionario f LEFT JOIN nivel_acesso n ON n.id_nivel_acesso=f.cargo`;
     res.json(await q(sql, req.query.cargo ? [req.query.cargo] : []));
   } catch (e) { err500(res, e); }
 });

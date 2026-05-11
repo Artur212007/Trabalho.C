@@ -3,6 +3,7 @@
                     import { Sidebar } from "../../components/sidebar";
                     import { IconAlert, IconClock, IconMoney, IconSearch } from "../../components/ui/icons";
                     import "./movimentacoes.css";
+import "../../styles/data-panel.css";
 
                     const API = "http://localhost:3001/api";
 
@@ -211,7 +212,7 @@
                                 </div>
                               </div>
 
-                              <div className="mov-table-card">
+                              <div className="data-panel">
                                 {loading ? (
                                   <div className="mov-state">
                                     <div className="mov-spinner" />
@@ -224,10 +225,9 @@
                                   </div>
                                 ) : (
                                   <div className="mov-table-wrap">
-                                    <table className="mov-table">
+                                    <div className="dp-table-wrap"><table className="dp-table">
                                       <thead>
                                         <tr>
-                                          <th>ID</th>
                                           <th>Tipo</th>
                                           <th>Descrição</th>
                                           <th>Valor</th>
@@ -237,7 +237,6 @@
                                       <tbody>
                                         {filteredMovimentacoes.map((movimentacao) => (
                                           <tr key={movimentacao.id_movimentacao}>
-                                            <td>#{movimentacao.id_movimentacao}</td>
                                             <td>
                                               <span className={`badge ${movimentacao.tipo}`}>
                                                 {movimentacao.tipo === "entrada" ? "Entrada" : "Saída"}
@@ -252,7 +251,7 @@
                                           </tr>
                                         ))}
                                       </tbody>
-                                    </table>
+                                    </table></div>
                                   </div>
                                 )}
                               </div>

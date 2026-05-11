@@ -1,7 +1,8 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import "./sidebar.css";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { getUser } from "../../utils/auth";
+import ConfirmDialog from "../ui/ConfirmDialog";
 
 // ── ÍCONES ────────────────────────────────────────────────────────────────────
 const IconDashboard    = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>;
@@ -81,6 +82,7 @@ const navGroups = [
 
 export function Sidebar() {
   const [open, setOpen] = useState(false);
+  const [confirmLogout, setConfirmLogout] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -97,9 +99,10 @@ export function Sidebar() {
   const roleUsuario = NIVEL_NOME[nivel] ?? "Usuário";
   const avatar = nomeUsuario.trim().charAt(0).toUpperCase() || "U";
 
-  function handleLogout() {
+  function doLogout() {
     localStorage.removeItem("token");
     sessionStorage.removeItem("usuario");
+    setConfirmLogout(false);
     navigate("/");
   }
 
@@ -168,11 +171,22 @@ export function Sidebar() {
               <div className="sidebar-user-role">{roleUsuario}</div>
             </div>
           </div>
-          <button onClick={handleLogout} className="sidebar-logout" title="Sair">
+          <button onClick={() => setConfirmLogout(true)} className="sidebar-logout" title="Sair">
             <IconLogout />
           </button>
         </div>
       </aside>
+
+      <ConfirmDialog
+        open={confirmLogout}
+        title="Sair da sua conta?"
+        message="Você precisará entrar novamente para acessar o sistema."
+        confirmLabel="Sair"
+        cancelLabel="Continuar"
+        variant="warning"
+        onConfirm={doLogout}
+        onCancel={() => setConfirmLogout(false)}
+      />
     </>
   );
 }

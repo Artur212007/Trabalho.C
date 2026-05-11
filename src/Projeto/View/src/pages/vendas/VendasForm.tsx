@@ -1,499 +1,243 @@
-import { useState, useEffect, type SVGProps } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Sidebar } from "../../components/sidebar";
-import { IconCart, IconClock, IconUsers } from "../../components/ui/icons";
+import { getUser } from "../../utils/auth";
 import "./VendasForm.css";
+import { formatCurrency } from "../../utils/format";
 
 const API = "http://localhost:3001/api";
 
-interface Produto {
-  id: number;
-  nome: string;
-  preco_venda: number;
-  quantidade_estoque: number;
-}
-
-interface Cliente {
-  id: number;
-  nome: string;
-  cpf_cnpj: string;
-}
-
-interface Funcionario {
-  id: number;
-  nome: string;
-  cargo: number;
-}
-
-interface ItemVenda {
-  id_produto: number;
-  nome_produto: string;
-  quantidade: number;
-  valor_unitario: number;
-  subtotal: number;
-}
-
-const IconArrow = () => (
-  <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-    <line x1="19" y1="12" x2="5" y2="12" />
-    <polyline points="12 19 5 12 12 5" />
-  </svg>
-);
-
-const IconCheck = (props: SVGProps<SVGSVGElement>) => (
-  <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" {...props}>
-    <polyline points="20 6 9 17 4 12" />
-  </svg>
-);
-
-const IconPlus = () => (
-  <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-    <line x1="12" y1="5" x2="12" y2="19" />
-    <line x1="5" y1="12" x2="19" y2="12" />
-  </svg>
-);
-
-const IconTrash = () => (
-  <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-    <polyline points="3 6 5 6 21 6" />
-    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-    <path d="M10 11v6" /><path d="M14 11v6" />
-  </svg>
-);
-
-async function fetchWithAuth(url: string, options: RequestInit = {}) {
-  const token = localStorage.getItem("token");
-  return fetch(url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-      ...options.headers,
-    },
-  });
-}
-
-function normalizarCliente(c: any): Cliente | null {
-  const id = Number(c.id_cliente ?? c.id);
-  if (!id || id <= 0) return null;
-  return { id, nome: c.nome ?? "", cpf_cnpj: c.cpf_cnpj ?? "" };
-}
-
-function normalizarProduto(p: any): Produto | null {
-  const id = Number(p.id_produto ?? p.id);
-  if (!id || id <= 0) return null;
-  return {
-    id,
-    nome: p.nome ?? "",
-    preco_venda: Number(p.preco_venda ?? 0),
-    quantidade_estoque: Number(p.quantidade_estoque ?? 0),
-  };
-}
-
-function normalizarFuncionario(f: any): Funcionario | null {
-  const id = Number(f.id_funcionario ?? f.id);
-  if (!id || id <= 0) return null;
-  return { id, nome: f.nome ?? "", cargo: Number(f.cargo ?? 0) };
-}
+type Item = { id_produto: string; quantidade: string; valor_unitario: string };
 
 export default function VendasForm() {
   const navigate = useNavigate();
-  const { id } = useParams<{ id?: string }>();
-  const isEdit = Boolean(id);
+  const { id } = useParams();
+  const user = getUser();
 
-  const [clientes, setClientes]   = useState<Cliente[]>([]);
-  const [produtos, setProdutos]   = useState<Produto[]>([]);
-  const [vendedores, setVendedores] = useState<Funcionario[]>([]);
+  const [clientes, setClientes] = useState<any[]>([]);
+  const [vendedores, setVendedores] = useState<any[]>([]);
+  const [produtos, setProdutos] = useState<any[]>([]);
 
-  const [clienteId, setClienteId]   = useState<number | null>(null);
-  const [vendedorId, setVendedorId] = useState<number | null>(null);
-  const [itens, setItens]           = useState<ItemVenda[]>([]);
-  const [produtoSelecionado, setProdutoSelecionado] = useState("");
-  const [quantidade, setQuantidade] = useState(1);
-  const [loading, setLoading]       = useState(false);
-  const [saving, setSaving]         = useState(false);
-  const [toast, setToast] = useState<{ msg: string; type: "ok" | "err"; visible: boolean }>(
-    { msg: "", type: "ok", visible: false }
-  );
+  const [idCliente, setIdCliente] = useState("");
+  const [idVendedor, setIdVendedor] = useState(user?.id_funcionario ? String(user.id_funcionario) : "");
+  const [status, setStatus] = useState("1");
+  const [itens, setItens] = useState<Item[]>([{ id_produto: "", quantidade: "1", valor_unitario: "" }]);
 
-  function showToast(msg: string, type: "ok" | "err" = "ok") {
-    setToast({ msg, type, visible: true });
-    setTimeout(() => setToast(t => ({ ...t, visible: false })), 3000);
-  }
+  const [loading, setLoading] = useState(false);
 
-  // ── carrega dados iniciais ──────────────────────────────────────────────────
   useEffect(() => {
-    async function loadData() {
-      setLoading(true);
-      try {
-        const [cRes, pRes, fRes] = await Promise.all([
-          fetchWithAuth(`${API}/clientes`),
-          fetchWithAuth(`${API}/produtos`),
-          fetchWithAuth(`${API}/funcionarios`),
-        ]);
+    fetchClientes();
+    fetchVendedores();
+    fetchProdutos();
+    if (id) fetchVenda();
+  }, [id]);
 
-        if (cRes.ok) {
-          const raw = await cRes.json();
-          setClientes((Array.isArray(raw) ? raw : []).map(normalizarCliente).filter(Boolean) as Cliente[]);
-        }
-        if (pRes.ok) {
-          const raw = await pRes.json();
-          setProdutos((Array.isArray(raw) ? raw : []).map(normalizarProduto).filter(Boolean) as Produto[]);
-        }
-        if (fRes.ok) {
-          const raw = await fRes.json();
-          // cargo 3 = VENDEDOR
-          setVendedores(
-            (Array.isArray(raw) ? raw : [])
-              .map(normalizarFuncionario)
-              .filter((f): f is Funcionario => f !== null && f.cargo === 3)
-          );
-        }
-      } catch (err) {
-        showToast("Erro ao carregar dados", "err");
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadData();
-  }, []);
-
-  // ── carrega venda para edição ───────────────────────────────────────────────
-  useEffect(() => {
-    if (!isEdit || !id) return;
-    async function loadVenda() {
-      try {
-        const res = await fetchWithAuth(`${API}/vendas/${id}`);
-        if (!res.ok) throw new Error("Erro ao carregar venda");
-        const data = await res.json();
-        setClienteId(Number(data.id_cliente) || null);
-        setVendedorId(Number(data.id_vendedor ?? data.vendedor_id) || null);
-        setItens(data.itens.map((item: any) => ({
-          id_produto:    item.id_produto,
-          nome_produto:  item.produto_nome ?? item.nome,
-          quantidade:    item.quantidade,
-          valor_unitario: Number(item.valor_unitario),
-          subtotal:      item.quantidade * Number(item.valor_unitario),
-        })));
-      } catch {
-        showToast("Erro ao carregar venda", "err");
-      }
-    }
-    loadVenda();
-  }, [isEdit, id]);
-
-  // ── adicionar produto ───────────────────────────────────────────────────────
-  function adicionarProduto() {
-    if (!produtoSelecionado) { showToast("Selecione um produto", "err"); return; }
-    if (quantidade <= 0)     { showToast("Quantidade inválida", "err"); return; }
-
-    const produtoId = Number(produtoSelecionado);
-    const produto   = produtos.find(p => p.id === produtoId);
-    if (!produto) { showToast("Produto não encontrado", "err"); return; }
-    if (produto.quantidade_estoque <= 0) { showToast("Produto sem estoque", "err"); return; }
-
-    const itemExistente = itens.find(i => i.id_produto === produtoId);
-    const novaQtd = (itemExistente?.quantidade ?? 0) + quantidade;
-
-    if (produto.quantidade_estoque < novaQtd) {
-      showToast(`Estoque insuficiente. Disponível: ${produto.quantidade_estoque}`, "err");
-      return;
-    }
-
-    if (itemExistente) {
-      setItens(itens.map(i =>
-        i.id_produto === produtoId
-          ? { ...i, quantidade: novaQtd, subtotal: novaQtd * i.valor_unitario }
-          : i
-      ));
-    } else {
-      setItens([...itens, {
-        id_produto:    produto.id,
-        nome_produto:  produto.nome,
-        quantidade,
-        valor_unitario: produto.preco_venda,
-        subtotal:      quantidade * produto.preco_venda,
-      }]);
-    }
-
-    setProdutoSelecionado("");
-    setQuantidade(1);
-    showToast("Produto adicionado!");
-  }
-
-  function removerItem(id_produto: number) {
-    setItens(itens.filter(i => i.id_produto !== id_produto));
-    showToast("Item removido");
-  }
-
-  const totalVenda          = itens.reduce((s, i) => s + i.subtotal, 0);
-  const totalItens          = itens.length;
-  const totalUnidades       = itens.reduce((s, i) => s + i.quantidade, 0);
-  const clienteSelecionado  = clientes.find(c => c.id === clienteId);
-  const vendedorSelecionado = vendedores.find(v => v.id === vendedorId);
-  const produtoSelecionadoInfo = produtos.find(p => p.id === Number(produtoSelecionado));
-  const estoqueDisponivel = produtoSelecionadoInfo?.quantidade_estoque ?? 0;
-
-  // ── finalizar venda ─────────────────────────────────────────────────────────
-  async function finalizarVenda() {
-    if (!clienteId)        { showToast("Selecione um cliente", "err"); return; }
-    if (!vendedorId)       { showToast("Selecione um vendedor", "err"); return; }
-    if (!itens.length)     { showToast("Adicione pelo menos um produto", "err"); return; }
-
-    setSaving(true);
+  async function fetchClientes() {
     try {
-      const res = await fetchWithAuth(`${API}/vendas`, {
-        method: "POST",
-        body: JSON.stringify({
-          id_cliente:  clienteId,
-          id_vendedor: vendedorId,
-          itens: itens.map(i => ({
-            id_produto:    i.id_produto,
-            quantidade:    i.quantidade,
-            valor_unitario: i.valor_unitario,
-          })),
-          valor_total: totalVenda,
-        }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Erro ao finalizar venda");
-      }
-
-      showToast("Venda registrada! Aguardando pagamento.");
-      setTimeout(() => navigate("/vendas"), 1500);
-    } catch (err: any) {
-      showToast(err.message, "err");
-    } finally {
-      setSaving(false);
-    }
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API}/clientes`, { headers: { Authorization: `Bearer ${token}` } });
+      setClientes(await res.json());
+    } catch { alert("Erro ao carregar clientes"); }
+  }
+  async function fetchVendedores() {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API}/funcionarios?cargo=3`, { headers: { Authorization: `Bearer ${token}` } });
+      setVendedores(await res.json());
+    } catch { /* ignore */ }
+  }
+  async function fetchProdutos() {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API}/produtos`, { headers: { Authorization: `Bearer ${token}` } });
+      setProdutos(await res.json());
+    } catch { alert("Erro ao carregar produtos"); }
   }
 
-  function fmt(value: number) {
-    return "R$ " + value.toLocaleString("pt-BR", { minimumFractionDigits: 2 });
+  async function fetchVenda() {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API}/vendas/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) { alert("Erro ao carregar venda"); return; }
+      const d = await res.json();
+      setIdCliente(String(d.id_cliente || ""));
+      setIdVendedor(String(d.id_vendedor || ""));
+      setStatus(String(d.status ?? "1"));
+      if (Array.isArray(d.itens) && d.itens.length) {
+        setItens(d.itens.map((i: any) => ({
+          id_produto: String(i.id_produto),
+          quantidade: String(i.quantidade),
+          valor_unitario: String(i.valor_unitario),
+        })));
+      }
+    } catch { alert("Erro ao carregar venda"); }
+  }
+
+  function atualizarItem(idx: number, campo: keyof Item, valor: string) {
+    setItens(prev => prev.map((it, i) => {
+      if (i !== idx) return it;
+      const novo = { ...it, [campo]: valor };
+      if (campo === "id_produto") {
+        const p = produtos.find((p: any) => String(p.id_produto) === valor);
+        if (p) novo.valor_unitario = String(p.preco_venda);
+      }
+      return novo;
+    }));
+  }
+  function adicionarItem() {
+    setItens(prev => [...prev, { id_produto: "", quantidade: "1", valor_unitario: "" }]);
+  }
+  function removerItem(idx: number) {
+    setItens(prev => prev.filter((_, i) => i !== idx));
+  }
+
+  const valorTotal = itens.reduce((s, it) => {
+    const q = Number(it.quantidade || 0);
+    const v = Number(it.valor_unitario || 0);
+    return s + q * v;
+  }, 0);
+
+  async function salvar(e: any) {
+    e.preventDefault();
+    if (!idCliente || !idVendedor) { alert("Cliente e vendedor são obrigatórios"); return; }
+    const itensValidos = itens.filter(i => i.id_produto && Number(i.quantidade) > 0);
+    if (!itensValidos.length) { alert("Adicione ao menos um item"); return; }
+
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("token");
+      const payload = {
+        id_cliente: Number(idCliente),
+        id_vendedor: Number(idVendedor),
+        valor_total: valorTotal,
+        status: Number(status),
+        itens: itensValidos.map(i => ({
+          id_produto: Number(i.id_produto),
+          quantidade: Number(i.quantidade),
+          valor_unitario: Number(i.valor_unitario),
+        })),
+      };
+      const res = await fetch(
+        id ? `${API}/vendas/${id}` : `${API}/vendas`,
+        {
+          method: id ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify(payload),
+        }
+      );
+      if (!res.ok) { const e = await res.json(); alert(e.error || "Erro ao salvar"); return; }
+      alert("Venda salva com sucesso!");
+      navigate("/vendas");
+    } catch { alert("Erro ao salvar"); }
+    finally { setLoading(false); }
   }
 
   return (
-    <div className="pf-wrapper">
+    <div className="funcionarios-wrapper">
       <Sidebar />
-
-      <div className="pf-page">
-        <div className="pf-header">
-          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-            <button className="btn btn-back pf-back" onClick={() => navigate("/vendas")}>
-              <IconArrow /> <span>Voltar</span>
-            </button>
-            <div className="pf-title-block">
-              <h1>{isEdit ? "Editar Venda" : "Nova Venda"}</h1>
-              <p>{isEdit ? "Atualize as informações da venda" : "Registre uma nova venda"}</p>
-            </div>
+      <div className="funcionarios-page">
+        <header className="p-topbar">
+          <div className="p-topbar-title">{id ? "Editar Venda" : "Nova Venda"}</div>
+          <div className="p-topbar-actions">
+            <button type="button" className="btn btn-back" onClick={() => navigate("/vendas")}>Voltar</button>
           </div>
+        </header>
+
+        <div className="p-content">
+          <form className="form-card" onSubmit={salvar}>
+            <h3 style={{ marginBottom: 16, fontSize: 15, fontWeight: 500 }}>Dados da Venda</h3>
+
+            <div className="form-grid">
+              <div>
+                <label>Cliente *</label>
+                <select value={idCliente} onChange={e => setIdCliente(e.target.value)}>
+                  <option value="">Selecione</option>
+                  {clientes.map((c: any) => (
+                    <option key={c.id_cliente} value={c.id_cliente}>{c.nome}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label>Vendedor *</label>
+                <select value={idVendedor} onChange={e => setIdVendedor(e.target.value)}>
+                  <option value="">Selecione</option>
+                  {vendedores.map((v: any) => (
+                    <option key={v.id_funcionario} value={v.id_funcionario}>{v.nome}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label>Status</label>
+                <select value={status} onChange={e => setStatus(e.target.value)}>
+                  <option value="1">Concluída</option>
+                  <option value="0">Cancelada</option>
+                </select>
+              </div>
+            </div>
+
+            <h3 style={{ marginTop: 24, marginBottom: 8, fontSize: 15, fontWeight: 500 }}>Itens</h3>
+
+            <table className="itens-table">
+              <thead>
+                <tr>
+                  <th style={{ width: "50%" }}>Produto</th>
+                  <th>Qtd</th>
+                  <th>Valor unit.</th>
+                  <th>Subtotal</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {itens.map((it, idx) => {
+                  const sub = Number(it.quantidade || 0) * Number(it.valor_unitario || 0);
+                  return (
+                    <tr key={idx}>
+                      <td>
+                        <select value={it.id_produto} onChange={e => atualizarItem(idx, "id_produto", e.target.value)}>
+                          <option value="">Selecione</option>
+                          {produtos.map((p: any) => (
+                            <option key={p.id_produto} value={p.id_produto}>{p.nome}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td>
+                        <input type="number" min="1" value={it.quantidade}
+                          onChange={e => atualizarItem(idx, "quantidade", e.target.value)} />
+                      </td>
+                      <td>
+                        <input type="number" step="0.01" value={it.valor_unitario}
+                          onChange={e => atualizarItem(idx, "valor_unitario", e.target.value)} />
+                      </td>
+                      <td style={{ whiteSpace: "nowrap" }}>{formatCurrency(sub)}</td>
+                      <td>
+                        <button type="button" className="btn btn-ghost" style={{ height: 36, padding: "0 12px" }}
+                          onClick={() => removerItem(idx)} disabled={itens.length === 1}>×</button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+
+            <div style={{ marginTop: 12 }}>
+              <button type="button" className="btn btn-ghost" onClick={adicionarItem}>+ Adicionar item</button>
+            </div>
+
+            <div className="total-line">
+              <span>Total:</span>
+              <span>{formatCurrency(valorTotal)}</span>
+            </div>
+
+            <div className="form-actions">
+              <button type="button" className="btn btn-ghost" onClick={() => navigate("/vendas")}>Cancelar</button>
+              <button className="btn btn-primary" disabled={loading}>
+                {loading ? "Salvando..." : "Salvar Venda"}
+              </button>
+            </div>
+          </form>
         </div>
-
-        <section className="pf-hero">
-          <div>
-            <p className="pf-hero-kicker">Fluxo de venda</p>
-            <h2>Seleção do vendedor</h2>
-            <p className="pf-hero-text">
-              O vendedor responsável é preenchido a partir dos funcionários com cargo de vendedor no banco.
-            </p>
-          </div>
-
-          <div className="pf-hero-chips">
-            <span className="pf-chip">Cargo 3</span>
-            <span className="pf-chip">{vendedores.length} vendedor(es)</span>
-            <span className="pf-chip pf-chip-dark">Campo obrigatório</span>
-          </div>
-        </section>
-
-        <div className="pf-card">
-          <div className="pf-card-header">
-            <div className="pf-card-icon"><IconCart /></div>
-            <div>
-              <h2>Registrar Venda</h2>
-              <p>Selecione o vendedor, cliente e os produtos</p>
-            </div>
-          </div>
-
-          {loading ? (
-            <div className="pf-loading"><IconClock style={{ width: 16, height: 16, marginRight: 8 }} /> Carregando dados...</div>
-          ) : (
-            <div className="pf-form">
-
-              {/* Vendedor */}
-              <div className="pf-section-card">
-                <div className="pf-section-head">
-                  <div>
-                    <div className="pf-section-title">Vendedor Responsável</div>
-                    <p className="pf-section-subtitle">Escolha quem ficará vinculado à venda.</p>
-                  </div>
-                </div>
-
-                <div className="pf-grid">
-                  <div className="pf-field pf-full">
-                  <label>Selecione o Vendedor *</label>
-                  <select
-                    value={vendedorId ?? ""}
-                    onChange={e => setVendedorId(Number(e.target.value) || null)}
-                  >
-                    <option value="">-- Selecione um vendedor --</option>
-                    {vendedores.length === 0
-                      ? <option disabled>Nenhum vendedor encontrado</option>
-                      : vendedores.map(v => <option key={v.id} value={v.id}>{v.nome}</option>)
-                    }
-                  </select>
-                  {vendedorSelecionado && (
-                    <div className="pf-selection-card pf-vendedor-card">
-                      <div className="pf-selection-icon">
-                        <IconUsers style={{ width: 16, height: 16 }} />
-                      </div>
-                      <div>
-                        <span>Vendedor selecionado</span>
-                        <strong>{vendedorSelecionado.nome}</strong>
-                      </div>
-                    </div>
-                  )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Cliente */}
-              <div className="pf-section-title">Cliente</div>
-              <div className="pf-grid">
-                <div className="pf-field pf-full">
-                  <label>Selecione o Cliente *</label>
-                  <select
-                    value={clienteId ?? ""}
-                    onChange={e => setClienteId(Number(e.target.value) || null)}
-                  >
-                    <option value="">-- Selecione um cliente --</option>
-                    {clientes.map(c => (
-                      <option key={c.id} value={c.id}>
-                        {c.nome}{c.cpf_cnpj ? ` - ${c.cpf_cnpj}` : ""}
-                      </option>
-                    ))}
-                  </select>
-                  {clienteSelecionado && (
-                    <div style={{ marginTop:10, padding:"8px 12px", background:"#d1fae5", borderRadius:6, fontSize:13, color:"#065f46" }}>
-                      <IconCheck style={{ width: 14, height: 14, marginRight: 6, verticalAlign: "-2px" }} /> Cliente: <strong>{clienteSelecionado.nome}</strong>
-                      {clienteSelecionado.cpf_cnpj ? ` — ${clienteSelecionado.cpf_cnpj}` : ""}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Produtos */}
-              <div className="pf-section-title">Produtos</div>
-              <div className="produtos-row">
-                <div className="produto-select">
-                  <select value={produtoSelecionado} onChange={e => setProdutoSelecionado(e.target.value)}>
-                    <option value="">Selecione um produto</option>
-                    {produtos.map(p => (
-                      <option key={p.id} value={p.id}>
-                        {p.nome} - {fmt(p.preco_venda)} (Estoque: {p.quantidade_estoque})
-                      </option>
-                    ))}
-                  </select>
-                  {produtoSelecionadoInfo && (
-                    <div className="pf-stock-hint">
-                      Estoque disponível: <strong>{estoqueDisponivel}</strong>
-                    </div>
-                  )}
-                </div>
-                <div className="quantidade-input">
-                  <input
-                    type="number" min="1" value={quantidade}
-                    max={estoqueDisponivel || undefined}
-                    onChange={e => setQuantidade(Number(e.target.value))}
-                    placeholder="Qtd"
-                  />
-                </div>
-                <button className="btn-add" onClick={adicionarProduto} type="button">
-                  <IconPlus /> Adicionar
-                </button>
-              </div>
-
-              {/* Tabela de itens */}
-              {itens.length > 0 ? (
-                <div className="itens-tabela">
-                  <div className="cart-summary">
-                    <div className="cart-summary-main">
-                      <span className="cart-summary-kicker">Carrinho montado</span>
-                      <h3>{totalItens} {totalItens === 1 ? "item" : "itens"} no carrinho</h3>
-                      <p>{totalUnidades} {totalUnidades === 1 ? "unidade" : "unidades"} selecionadas</p>
-                    </div>
-
-                    <div className="cart-total-card">
-                      <span>Total da venda</span>
-                      <strong>{fmt(totalVenda)}</strong>
-                      <small>Valor atualizado automaticamente</small>
-                    </div>
-                  </div>
-
-                  <table className="itens-table">
-                    <thead>
-                      <tr>
-                        <th>Produto</th><th>Quantidade</th><th>Valor Unit.</th><th>Subtotal</th><th></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {itens.map(item => (
-                        <tr key={item.id_produto}>
-                          <td>{item.nome_produto}</td>
-                          <td>{item.quantidade}</td>
-                          <td>{fmt(item.valor_unitario)}</td>
-                          <td><strong>{fmt(item.subtotal)}</strong></td>
-                          <td>
-                            <button
-                              className="btn-remove"
-                              onClick={() => removerItem(item.id_produto)}
-                              type="button"
-                              title="Remover item"
-                              aria-label={`Remover ${item.nome_produto}`}
-                            >
-                              <span className="btn-remove-badge">
-                                <IconTrash />
-                              </span>
-                              <span className="btn-remove-text">Excluir item</span>
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="empty-cart">
-                  <div className="empty-cart-icon">
-                    <IconCart />
-                  </div>
-                  <h3>Seu carrinho está vazio</h3>
-                  <p>Adicione produtos acima para montar a venda e visualizar o total aqui.</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          <div className="pf-footer">
-            <button className="btn btn-ghost" onClick={() => navigate("/vendas")}>
-              Cancelar
-            </button>
-            <button
-              className="btn btn-primary"
-              onClick={finalizarVenda}
-              disabled={saving || !itens.length || !clienteId || !vendedorId}
-            >
-              <IconCheck />
-              {saving ? "Registrando..." : "Registrar Venda"}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className={`toast${toast.visible ? " show" : ""}`}>
-        <span className={`toast-dot ${toast.type}`} />
-        <span>{toast.msg}</span>
       </div>
     </div>
   );

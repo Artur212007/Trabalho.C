@@ -81,7 +81,7 @@ export function SignUp() {
           </p>
         </div>
 
-        <div className="login-container">
+        <div className="login-container login-container-signup">
           <div className="login-form">
             <h2>Crie sua conta</h2>
             <p>Preencha os campos para criar sua conta.</p>

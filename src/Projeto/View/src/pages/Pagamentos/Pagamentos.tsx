@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Sidebar } from "../../components/sidebar";
 import { IconAlert, IconCart, IconCheck, IconClock, IconDown, IconEdit, IconEye, IconMoney, IconPlus, IconSearch, IconTrash } from "../../components/ui/icons";
 import "./Pagamentos.css";
+import "../../styles/data-panel.css";
+import ConfirmDialog from "../../components/ui/ConfirmDialog";
 
 const API = "http://localhost:3001/api";
 
@@ -274,14 +276,11 @@ export default function Pagamentos() {
       <Sidebar />
       <div className="pagamentos-page">
         <header className="p-topbar">
+          <div className="p-topbar-title">Pagamentos</div>
           <div className="p-topbar-title">
-            Pagamentos <span>Gestão de Recebimentos</span>
           </div>
           <div className="p-topbar-actions">
-            <button className="btn btn-ghost" onClick={exportCSV}>
-              <IconDown /> Exportar
-            </button>
-            <button className="btn btn-primary" onClick={() => navigate("/pagamentos/novo")}>
+<button className="btn btn-primary" onClick={() => navigate("/pagamentos/novo")}>
               <IconPlus /> Novo Pagamento
             </button>
           </div>
@@ -325,13 +324,13 @@ export default function Pagamentos() {
           </div>
 
           {/* Filters */}
-          <div className="table-card">
-            <div className="table-header">
+          <div className="data-panel">
+            <div className="dp-header">
               <h3>Lista de Pagamentos</h3>
-              <div className="table-header-right">
+              <div className="dp-header-right">
                 <div className="filter-group">
                   <select 
-                    className="filter-select"
+                    className="dp-select"
                     value={filterStatus} 
                     onChange={e => setFilterStatus(e.target.value)}
                   >
@@ -341,7 +340,7 @@ export default function Pagamentos() {
                     <option value="atrasado">Atrasados</option>
                     <option value="cancelado">Cancelados</option>
                   </select>
-                  <div className="search-bar">
+                  <div className="dp-search">
                     <IconSearch />
                     <input 
                       type="text" 
@@ -355,23 +354,22 @@ export default function Pagamentos() {
             </div>
 
             {loading ? (
-              <div className="empty-state">
-                <div className="big-icon"><IconClock style={{ width: 32, height: 32 }} /></div>
+              <div className="dp-empty">
+                <div className="dp-empty-icon"><IconClock style={{ width: 32, height: 32 }} /></div>
                 <p>Carregando pagamentos...</p>
               </div>
             ) : lista.length === 0 ? (
-              <div className="empty-state">
-                <div className="big-icon"><IconMoney style={{ width: 32, height: 32 }} /></div>
+              <div className="dp-empty">
+                <div className="dp-empty-icon"><IconMoney style={{ width: 32, height: 32 }} /></div>
                 <p>
                   Nenhum pagamento encontrado.<br />
                   Clique em <strong>Novo Pagamento</strong> para registrar um recebimento.
                 </p>
               </div>
             ) : (
-              <table className="pagamentos-table">
+              <div className="dp-table-wrap"><table className="dp-table">
                 <thead>
                   <tr>
-                    <th>ID</th>
                     <th>Cliente</th>
                     <th>Valor</th>
                     <th>Forma</th>
@@ -383,21 +381,20 @@ export default function Pagamentos() {
                 <tbody>
                   {lista.map(p => (
                     <tr key={p.id_pagamento}>
-                      <td className="td-id">#{p.id_pagamento}</td>
-                      <td className="td-nome">{p.cliente_nome}</td>
-                      <td className="td-valor">{formatCurrency(p.valor)}</td>
-                      <td className="td-dim">{getFormaPagamentoText(p.forma_pagamento)}</td>
-                      <td className="td-dim">{formatDate(p.data_vencimento)}</td>
+                      <td className="dp-cell-muted">{p.cliente_nome}</td>
+                      <td className="dp-cell-mono" data-label="Valor">{formatCurrency(p.valor)}</td>
+                      <td className="dp-cell-muted" data-label="Forma">{getFormaPagamentoText(p.forma_pagamento)}</td>
+                      <td className="dp-cell-muted" data-label="Vencimento">{formatDate(p.data_vencimento)}</td>
                       <td>
                         <span className={`status-badge ${getStatusBadge(p.status)}`}>
                           {getStatusText(p.status)}
                         </span>
                       </td>
                       <td>
-                        <div className="row-actions">
+                        <div className="dp-row-actions">
                           {p.parcelas > 1 && (
                             <button 
-                              className="icon-btn view" 
+                              className="dp-btn-icon dp-view" 
                               title="Ver parcelas" 
                               onClick={() => {
                                 setViewParcelasId(p.id_pagamento);
@@ -417,14 +414,14 @@ export default function Pagamentos() {
                             </button>
                           )}
                           <button 
-                            className="icon-btn edit" 
+                            className="dp-btn-icon dp-edit" 
                             title="Editar" 
                             onClick={() => navigate(`/pagamentos/editar/${p.id_pagamento}`)}
                           >
                             <IconEdit />
                           </button>
                           <button 
-                            className="icon-btn del" 
+                            className="dp-btn-icon dp-del" 
                             title="Remover" 
                             onClick={() => setConfirmId(p.id_pagamento)}
                           >
@@ -435,21 +432,22 @@ export default function Pagamentos() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></div>
             )}
           </div>
         </div>
       </div>
 
       {/* Modal de Parcelas */}
+      {viewParcelasId !== null && (
       <div 
-        className={`modal-overlay${viewParcelasId !== null ? " open" : ""}`} 
+        className="modal-overlay open"
         onClick={() => setViewParcelasId(null)}
       >
         <div className="parcelas-modal" onClick={e => e.stopPropagation()}>
           <h3><IconCart style={{ width: 18, height: 18, verticalAlign: "-3px" }} /> Parcelas do Pagamento #{viewParcelasId}</h3>
           {viewParcelasId && parcelas[viewParcelasId] && (
-            <table className="parcelas-table">
+            <div className="dp-table-wrap"><table className="dp-table">
               <thead>
                 <tr>
                   <th>Parcela</th>
@@ -474,7 +472,7 @@ export default function Pagamentos() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           )}
           <div className="modal-actions">
             <button className="btn btn-primary" onClick={() => setViewParcelasId(null)}>
@@ -483,33 +481,20 @@ export default function Pagamentos() {
           </div>
         </div>
       </div>
+      )}
 
-      {/* Modal de Confirmação */}
-      <div 
-        className={`modal-overlay${confirmId !== null ? " open" : ""}`} 
-        onClick={handleCloseModal}
-      >
-        <div className="confirm-modal" onClick={e => e.stopPropagation()}>
-          <div className="danger-icon"><IconTrash /></div>
-          <h3>Remover pagamento?</h3>
-          <p>
-            Pagamento de <strong>{confirmPagamento ? formatCurrency(confirmPagamento.valor) : ''}</strong>
-            {" "}do cliente <strong>{confirmPagamento?.cliente_nome}</strong> será removido.
-          </p>
-          <div className="confirm-actions">
-            <button className="btn btn-ghost" onClick={handleCloseModal}>
-              Cancelar
-            </button>
-            <button 
-              className="btn btn-danger" 
-              onClick={handleDelete} 
-              disabled={deleting}
-            >
-              {deleting ? "Removendo..." : "Sim, remover"}
-            </button>
-          </div>
-        </div>
-      </div>
+      <ConfirmDialog
+        open={confirmId !== null}
+        title="Remover pagamento?"
+        message={
+          <>Pagamento de <strong>{confirmPagamento ? formatCurrency(confirmPagamento.valor) : ''}</strong> do cliente <strong>{confirmPagamento?.cliente_nome}</strong> será removido.</>
+        }
+        confirmLabel={deleting ? "Removendo..." : "Sim, remover"}
+        variant="danger"
+        loading={deleting}
+        onConfirm={handleDelete}
+        onCancel={handleCloseModal}
+      />
 
       <div className={`toast${toast.visible ? " show" : ""}`}>
         <span className={`toast-dot ${toast.type}`} />

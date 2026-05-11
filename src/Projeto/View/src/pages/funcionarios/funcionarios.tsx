@@ -3,6 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { Sidebar } from "../../components/sidebar";
 import { IconAlert, IconCheck, IconClock, IconUsers } from "../../components/ui/icons";
 import "./funcionarios.css";
+import "../../styles/data-panel.css";
+import ConfirmDialog from "../../components/ui/ConfirmDialog";
+import { formatCurrency, formatPercent } from "../../utils/format";
 
 const API = "http://localhost:3001/api"; // ✅ Adicionado /api
 
@@ -87,6 +90,9 @@ export default function Funcionarios() {
     total: funcionarios.length,
     ativos: funcionarios.filter(f => f.ativo === 1).length,
     inativos: funcionarios.filter(f => f.ativo === 0).length,
+    comissaoMedia: funcionarios.length
+      ? funcionarios.reduce((acc, current) => acc + current.percentual_comissao, 0) / funcionarios.length
+      : 0,
   }), [funcionarios]);
 
   const lista = useMemo(() =>
@@ -165,9 +171,9 @@ export default function Funcionarios() {
       <Sidebar />
       <div className="funcionarios-page">
         <header className="p-topbar">
-          <div className="p-topbar-title">Funcionários <span>Cadastro</span></div>
+          <div className="p-topbar-title">Funcionários</div>
           <div className="p-topbar-actions">
-            <button className="btn btn-ghost" onClick={exportCSV}><IconDown /> Exportar</button>
+            
             <button className="btn btn-primary" onClick={() => navigate("/funcionarios/novo")}><IconPlus /> Novo Funcionário</button>
           </div>
         </header>
@@ -177,14 +183,14 @@ export default function Funcionarios() {
             <div className="stat-card"><div className="stat-icon si-yellow"><IconUsers /></div><div className="stat-info"><p>Total de Funcionários</p><strong>{stats.total}</strong></div></div>
             <div className="stat-card"><div className="stat-icon si-green"><IconCheck /></div><div className="stat-info"><p>Ativos</p><strong>{stats.ativos}</strong></div></div>
             <div className="stat-card"><div className="stat-icon si-red"><IconAlert /></div><div className="stat-info"><p>Inativos</p><strong>{stats.inativos}</strong></div></div>
-            <div className="stat-card" style={{ opacity: 0 }}><div className="stat-icon si-purple"></div><div className="stat-info"><p></p><strong></strong></div></div>
+            <div className="stat-card"><div className="stat-icon si-purple">%</div><div className="stat-info"><p>Comissão Média</p><strong>{formatPercent(stats.comissaoMedia)}</strong></div></div>
           </div>
 
-          <div className="table-card">
-            <div className="table-header">
+          <div className="data-panel">
+            <div className="dp-header">
               <h3>Cadastro de Funcionários</h3>
-              <div className="table-header-right">
-                <div className="search-bar">
+              <div className="dp-header-right">
+                <div className="dp-search">
                   <IconSearch />
                   <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar funcionário..." />
                 </div>
@@ -192,63 +198,49 @@ export default function Funcionarios() {
             </div>
 
             {loading ? (
-              <div className="empty-state"><div className="big-icon"><IconClock style={{ width: 32, height: 32 }} /></div><p>Carregando funcionários...</p></div>
+              <div className="dp-empty"><div className="dp-empty-icon"><IconClock style={{ width: 32, height: 32 }} /></div><p>Carregando funcionários...</p></div>
             ) : lista.length === 0 ? (
-              <div className="empty-state"><div className="big-icon"><IconUsers style={{ width: 32, height: 32 }} /></div><p>Nenhum funcionário encontrado.<br />Clique em <strong>Novo Funcionário</strong> para cadastrar.</p></div>
+              <div className="dp-empty"><div className="dp-empty-icon"><IconUsers style={{ width: 32, height: 32 }} /></div><p>Nenhum funcionário encontrado.<br />Clique em <strong>Novo Funcionário</strong> para cadastrar.</p></div>
             ) : (
-              <table>
+              <div className="dp-table-wrap"><table className="dp-table">
                 <thead>
                   <tr>
-                    <th>ID</th><th>Nome</th><th>Cargo</th><th>Salário</th><th>% Comissão</th><th>Status</th><th>Ações</th>
+                    <th>Nome</th><th>Cargo</th><th>Salário</th><th>% Comissão</th><th>Status</th><th>Ações</th>
                   </tr>
                 </thead>
                 <tbody>
                   {lista.map(c => (
                     <tr key={c.id}>
-                      <td className="td-id">#{c.id}</td>
-                      <td className="td-nome">{c.nome}</td>
-                      <td className="td-dim">{getCargoNome(c.cargo)}</td>
-                      <td className="td-dim">R$ {c.salario.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
-                      <td className="td-dim">{c.percentual_comissao.toFixed(2)}%</td>
-                      <td><span className={`status ${c.ativo === 1 ? 'ativo' : 'inativo'}`}>{c.ativo === 1 ? 'Ativo' : 'Inativo'}</span></td>
+                      <td className="dp-cell-muted">{c.nome}</td>
+                      <td className="dp-cell-muted" data-label="Cargo">{getCargoNome(c.cargo)}</td>
+                      <td className="dp-cell-muted" data-label="Salário">{formatCurrency(c.salario)}</td>
+                      <td className="dp-cell-muted" data-label="Comissão">{formatPercent(c.percentual_comissao)}</td>
+                      <td data-label="Status"><span className={`status ${c.ativo === 1 ? 'ativo' : 'inativo'}`}>{c.ativo === 1 ? 'Ativo' : 'Inativo'}</span></td>
                       <td>
-                        <div className="row-actions">
-                          <button className="icon-btn edit" title="Editar" onClick={() => navigate(`/funcionarios/editar/${c.id}`)}><IconEdit /></button>
-                          <button className="icon-btn del" title="Remover" onClick={() => setConfirmId(c.id)}><IconTrash /></button>
+                        <div className="dp-row-actions">
+                          <button className="dp-btn-icon dp-edit" title="Editar" onClick={() => navigate(`/funcionarios/editar/${c.id}`)}><IconEdit /></button>
+                          <button className="dp-btn-icon dp-del" title="Remover" onClick={() => setConfirmId(c.id)}><IconTrash /></button>
                         </div>
                       </td>
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></div>
             )}
           </div>
         </div>
       </div>
 
-      {/* ✅ MODAL DE CONFIRMAÇÃO DIRETO */}
-      <div 
-        className={`modal-overlay${confirmId !== null ? " open" : ""}`} 
-        onClick={handleCloseModal}
-      >
-        <div className="confirm-modal" onClick={e => e.stopPropagation()}>
-          <div className="danger-icon"><IconTrash /></div>
-          <h3>Remover funcionário?</h3>
-          <p>"{confirmFuncionario?.nome || 'Funcionário'}" será removido do sistema.</p>
-          <div className="confirm-actions">
-            <button className="btn btn-ghost" onClick={handleCloseModal}>
-              Cancelar
-            </button>
-            <button 
-              className="btn btn-danger" 
-              onClick={handleDelete} 
-              disabled={deleting}
-            >
-              {deleting ? "Removendo..." : "Sim, remover"}
-            </button>
-          </div>
-        </div>
-      </div>
+      <ConfirmDialog
+        open={confirmId !== null}
+        title="Remover funcionário?"
+        message={<>"{confirmFuncionario?.nome || 'Funcionário'}" será removido do sistema.</>}
+        confirmLabel={deleting ? "Removendo..." : "Sim, remover"}
+        variant="danger"
+        loading={deleting}
+        onConfirm={handleDelete}
+        onCancel={handleCloseModal}
+      />
 
       <div className={`toast${toast.visible ? " show" : ""}`}>
         <span className={`toast-dot ${toast.type}`} />

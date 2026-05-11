@@ -1,3 +1,25 @@
+
+import React from "react";
+
+window.history.scrollRestoration = "manual";
+
+let savedScroll = 0;
+
+window.addEventListener("scroll", () => {
+  savedScroll = window.scrollY;
+});
+
+window.addEventListener("beforeunload", () => {
+  sessionStorage.setItem("scroll-position", String(savedScroll));
+});
+
+window.addEventListener("load", () => {
+  const pos = sessionStorage.getItem("scroll-position");
+  if(pos){
+    window.scrollTo(0, Number(pos));
+  }
+});
+
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import PrivateRoute from "./components/PrivateRoute";

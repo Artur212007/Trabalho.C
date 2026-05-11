@@ -4,6 +4,9 @@ import { Sidebar } from "../../components/sidebar";
 import { IconAlert, IconBox, IconCheck, IconClock, IconDown, IconEdit, IconPlus, IconSearch, IconTrash } from "../../components/ui/icons";
 import { getUser } from "../../utils/auth";
 import "./OrdemServico.css";
+import "../../styles/data-panel.css";
+import ConfirmDialog from "../../components/ui/ConfirmDialog";
+import { formatDateTime } from "../../utils/format";
 
 const API = "http://localhost:3001/api";
 
@@ -25,6 +28,7 @@ export default function OrdemServico() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [confirmId, setConfirmId] = useState<number | null>(null);
+  const [problemaVisivel, setProblemaVisivel] = useState<Record<number, boolean>>({});
 
   const user = getUser();
   const isTecnico = user?.nivel === 4;
@@ -177,16 +181,10 @@ export default function OrdemServico() {
 
       <div className="funcionarios-page">
         <header className="p-topbar">
-          <div className="p-topbar-title">
-            Ordens de Serviço <span>Gestão</span>
-          </div>
+          <div className="p-topbar-title">Ordens de Serviço</div>
 
           <div className="p-topbar-actions">
-            <button className="btn btn-ghost" onClick={exportCSV}>
-              <IconDown /> Exportar
-            </button>
-
-            {!isTecnico && (
+{!isTecnico && (
               <button
                 className="btn btn-primary"
                 onClick={() => navigate("/ordem/novo")}
@@ -229,10 +227,10 @@ export default function OrdemServico() {
             </div>
           </div>
 
-          <div className="table-card">
-            <div className="table-header">
+          <div className="data-panel">
+            <div className="dp-header">
               <h3>Ordens de Serviço</h3>
-              <div className="search-bar">
+              <div className="dp-search">
                 <IconSearch />
                 <input
                   value={search}
@@ -243,20 +241,19 @@ export default function OrdemServico() {
             </div>
 
             {loading ? (
-              <div className="empty-state">
-                <div className="big-icon"><IconClock style={{ width: 32, height: 32 }} /></div>
+              <div className="dp-empty">
+                <div className="dp-empty-icon"><IconClock style={{ width: 32, height: 32 }} /></div>
                 <p>Carregando ordens de serviço...</p>
               </div>
             ) : filtrado.length === 0 ? (
-              <div className="empty-state">
-                <div className="big-icon"><IconBox style={{ width: 32, height: 32 }} /></div>
+              <div className="dp-empty">
+                <div className="dp-empty-icon"><IconBox style={{ width: 32, height: 32 }} /></div>
                 <p>Nenhuma ordem encontrada</p>
               </div>
             ) : (
-              <table className="ordem-table">
+              <div className="dp-table-wrap"><table className="dp-table">
                 <thead>
                   <tr>
-                    <th>ID</th>
                     <th>Cliente</th>
                     <th>Técnico</th>
                     <th>Problema</th>
@@ -269,8 +266,7 @@ export default function OrdemServico() {
                 <tbody>
                   {filtrado.map(o => (
                     <tr key={o.id}>
-                      <td>#{o.id}</td>
-                      <td>{o.cliente}</td>
+                      <td data-label="Cliente">{o.cliente}</td>
 
                       {/* Coluna técnico — mostra "Disponível" se não tiver */}
                       <td>
@@ -280,7 +276,27 @@ export default function OrdemServico() {
                         }
                       </td>
 
-                      <td>{o.descricao}</td>
+                      <td>
+                        <div className="problema-cell">
+                          {problemaVisivel[o.id] ? (
+                            <span className="problema-text" title={o.descricao}>{o.descricao || "—"}</span>
+                          ) : (
+                            <span className="problema-hidden">oculto</span>
+                          )}
+                          <button
+                            type="button"
+                            className={`problema-toggle${problemaVisivel[o.id] ? " active" : ""}`}
+                            title={problemaVisivel[o.id] ? "Ocultar problema" : "Visualizar problema"}
+                            onClick={() => setProblemaVisivel(s => ({ ...s, [o.id]: !s[o.id] }))}
+                          >
+                            {problemaVisivel[o.id] ? (
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a19.6 19.6 0 0 1 5.17-6.06"/><path d="M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a19.6 19.6 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                            ) : (
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                            )}
+                          </button>
+                        </div>
+                      </td>
 
                       <td>
                         <span className={`status-badge ${getStatusClass(o.status_execucao)}`}>
@@ -288,12 +304,12 @@ export default function OrdemServico() {
                         </span>
                       </td>
 
-                      <td>{o.data ? new Date(o.data).toLocaleString() : "-"}</td>
-                      <td>{o.id_orcamento ? `#${o.id_orcamento}` : "-"}</td>
+                      <td data-label="Data">{formatDateTime(o.data)}</td>
+                      <td data-label="Orçamento">{o.id_orcamento ? `#${o.id_orcamento}` : "-"}</td>
 
                       {/* AÇÕES */}
                       <td>
-                        <div className="row-actions">
+                        <div className="dp-row-actions">
 
                           {/* Técnico vendo OS disponível → só botão Pegar */}
                           {isTecnico && semTecnico(o) && (
@@ -309,7 +325,7 @@ export default function OrdemServico() {
                           {/* Técnico vendo OS já vinculada a ele → só ver detalhes */}
                           {isTecnico && !semTecnico(o) && (
                             <button
-                              className="icon-btn edit"
+                              className="dp-btn-icon dp-edit"
                               title="Ver detalhes"
                               onClick={() => navigate(`/ordem/${o.id}/detalhes`)}
                             >
@@ -321,21 +337,21 @@ export default function OrdemServico() {
                           {!isTecnico && (
                             <>
                               <button
-                                className="icon-btn edit"
+                                className="dp-btn-icon dp-edit"
                                 title="Ver detalhes"
                                 onClick={() => navigate(`/ordem/${o.id}/detalhes`)}
                               >
                                 👁
                               </button>
                               <button
-                                className="icon-btn edit"
+                                className="dp-btn-icon dp-edit"
                                 title="Editar"
                                 onClick={() => navigate(`/ordem/editar/${o.id}`)}
                               >
                                 <IconEdit />
                               </button>
                               <button
-                                className="icon-btn del"
+                                className="dp-btn-icon dp-del"
                                 title="Excluir"
                                 onClick={() => setConfirmId(o.id)}
                               >
@@ -349,24 +365,20 @@ export default function OrdemServico() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></div>
             )}
           </div>
         </div>
 
-        {confirmId !== null && (
-          <div className="confirm-overlay open" onClick={() => setConfirmId(null)}>
-            <div className="confirm-box" onClick={e => e.stopPropagation()}>
-              <div className="confirm-icon"><IconTrash /></div>
-              <h3>Excluir ordem de serviço?</h3>
-              <p>Essa ação é permanente e vai remover a ordem selecionada.</p>
-              <div className="confirm-actions">
-                <button className="btn btn-ghost" onClick={() => setConfirmId(null)}>Cancelar</button>
-                <button className="btn btn-danger" onClick={() => deletar(confirmId)}>Sim, excluir</button>
-              </div>
-            </div>
-          </div>
-        )}
+        <ConfirmDialog
+          open={confirmId !== null}
+          title="Excluir ordem de serviço?"
+          message="Essa ação é permanente e vai remover a ordem selecionada."
+          confirmLabel="Sim, excluir"
+          variant="danger"
+          onConfirm={() => confirmId !== null && deletar(confirmId)}
+          onCancel={() => setConfirmId(null)}
+        />
       </div>
     </div>
   );

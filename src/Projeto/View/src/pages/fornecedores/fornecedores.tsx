@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Sidebar } from "../../components/sidebar";
 import { IconBuilding, IconClock, IconPhone } from "../../components/ui/icons";
 import "./fornecedores.css";
+import "../../styles/data-panel.css";
+import ConfirmDialog from "../../components/ui/ConfirmDialog";
 
 const API = "http://localhost:3001/api"; // ✅ Adicionado /api
 
@@ -83,6 +85,7 @@ export default function Fornecedores() {
     total: fornecedores.length,
     comEmail: fornecedores.filter(f => f.email !== "—").length,
     comTel: fornecedores.filter(f => f.telefone !== "—").length,
+    semEmail: fornecedores.filter(f => f.email === "—").length,
   }), [fornecedores]);
 
   const lista = useMemo(() =>
@@ -150,9 +153,9 @@ export default function Fornecedores() {
       <Sidebar />
       <div className="fornecedores-page">
         <header className="p-topbar">
-          <div className="p-topbar-title">Fornecedores <span>Cadastro</span></div>
+          <div className="p-topbar-title">Fornecedores</div>
           <div className="p-topbar-actions">
-            <button className="btn btn-ghost" onClick={exportCSV}><IconDown /> Exportar</button>
+            
             <button className="btn btn-primary" onClick={() => navigate("/fornecedores/novo")}><IconPlus /> Novo Fornecedor</button>
           </div>
         </header>
@@ -162,14 +165,14 @@ export default function Fornecedores() {
             <div className="stat-card"><div className="stat-icon si-yellow"><IconBuilding /></div><div className="stat-info"><p>Total de Fornecedores</p><strong>{stats.total}</strong></div></div>
             <div className="stat-card"><div className="stat-icon si-blue">📄</div><div className="stat-info"><p>Com E-mail</p><strong>{stats.comEmail}</strong></div></div>
             <div className="stat-card"><div className="stat-icon si-green"><IconPhone /></div><div className="stat-info"><p>Com Telefone</p><strong>{stats.comTel}</strong></div></div>
-            <div className="stat-card" style={{ opacity: 0 }}><div className="stat-icon si-purple"></div><div className="stat-info"><p></p><strong></strong></div></div>
+            <div className="stat-card"><div className="stat-icon si-purple">✉️</div><div className="stat-info"><p>Sem E-mail</p><strong>{stats.semEmail}</strong></div></div>
           </div>
 
-          <div className="table-card">
-            <div className="table-header">
+          <div className="data-panel">
+            <div className="dp-header">
               <h3>Cadastro de Fornecedores</h3>
-              <div className="table-header-right">
-                <div className="search-bar">
+              <div className="dp-header-right">
+                <div className="dp-search">
                   <IconSearch />
                   <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar fornecedor..." />
                 </div>
@@ -177,65 +180,51 @@ export default function Fornecedores() {
             </div>
 
             {loading ? (
-              <div className="empty-state"><div className="big-icon"><IconClock style={{ width: 32, height: 32 }} /></div><p>Carregando fornecedores...</p></div>
+              <div className="dp-empty"><div className="dp-empty-icon"><IconClock style={{ width: 32, height: 32 }} /></div><p>Carregando fornecedores...</p></div>
             ) : lista.length === 0 ? (
-              <div className="empty-state">
-                <div className="big-icon"><IconBuilding style={{ width: 32, height: 32 }} /></div>
+              <div className="dp-empty">
+                <div className="dp-empty-icon"><IconBuilding style={{ width: 32, height: 32 }} /></div>
                 <p>Nenhum fornecedor encontrado.<br />Clique em <strong>Novo Fornecedor</strong> para cadastrar.</p>
               </div>
             ) : (
-              <table>
+              <div className="dp-table-wrap"><table className="dp-table">
                 <thead>
                   <tr>
-                    <th>ID</th><th>Nome</th><th>Telefone</th><th>E-mail</th><th>Endereço</th><th>Ações</th>
+                    <th>Nome</th><th>Telefone</th><th>E-mail</th><th>Endereço</th><th>Ações</th>
                   </tr>
                 </thead>
                 <tbody>
                   {lista.map(f => (
                     <tr key={f.id}>
-                      <td className="td-id">#{f.id}</td>
-                      <td className="td-nome">{f.nome}</td>
-                      <td className="td-dim">{f.telefone}</td>
-                      <td className="td-dim">{f.email}</td>
-                      <td className="td-dim">{f.endereco}</td>
+                      <td className="dp-cell-muted">{f.nome}</td>
+                      <td className="dp-cell-muted" data-label="Telefone">{f.telefone}</td>
+                      <td className="dp-cell-muted" data-label="E-mail">{f.email}</td>
+                      <td className="dp-cell-muted" data-label="Endereço">{f.endereco}</td>
                       <td>
-                        <div className="row-actions">
-                          <button className="icon-btn edit" title="Editar" onClick={() => navigate(`/fornecedores/editar/${f.id}`)}><IconEdit /></button>
-                          <button className="icon-btn del" title="Remover" onClick={() => setConfirmId(f.id)}><IconTrash /></button>
+                        <div className="dp-row-actions">
+                          <button className="dp-btn-icon dp-edit" title="Editar" onClick={() => navigate(`/fornecedores/editar/${f.id}`)}><IconEdit /></button>
+                          <button className="dp-btn-icon dp-del" title="Remover" onClick={() => setConfirmId(f.id)}><IconTrash /></button>
                         </div>
                       </td>
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></div>
             )}
           </div>
         </div>
       </div>
 
-      {/* ✅ MODAL DE CONFIRMAÇÃO DIRETO */}
-      <div 
-        className={`modal-overlay${confirmId !== null ? " open" : ""}`} 
-        onClick={handleCloseModal}
-      >
-        <div className="confirm-modal" onClick={e => e.stopPropagation()}>
-          <div className="danger-icon"><IconTrash /></div>
-          <h3>Remover fornecedor?</h3>
-          <p>"{confirmFornecedor?.nome || 'Fornecedor'}" será removido permanentemente do sistema.</p>
-          <div className="confirm-actions">
-            <button className="btn btn-ghost" onClick={handleCloseModal}>
-              Cancelar
-            </button>
-            <button 
-              className="btn btn-danger" 
-              onClick={handleDelete} 
-              disabled={deleting}
-            >
-              {deleting ? "Removendo..." : "Sim, remover"}
-            </button>
-          </div>
-        </div>
-      </div>
+      <ConfirmDialog
+        open={confirmId !== null}
+        title="Remover fornecedor?"
+        message={<>"{confirmFornecedor?.nome || 'Fornecedor'}" será removido permanentemente.</>}
+        confirmLabel={deleting ? "Removendo..." : "Sim, remover"}
+        variant="danger"
+        loading={deleting}
+        onConfirm={handleDelete}
+        onCancel={handleCloseModal}
+      />
 
       <div className={`toast${toast.visible ? " show" : ""}`}><span className={`toast-dot ${toast.type}`} /><span>{toast.msg}</span></div>
     </div>

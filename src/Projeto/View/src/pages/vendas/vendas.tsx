@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Sidebar } from "../../components/sidebar";
 import { IconCart, IconCheck, IconChart, IconClock, IconMoney } from "../../components/ui/icons";
 import "./vendas.css";
+import "../../styles/data-panel.css";
 
 const API = "http://localhost:3001/api"; // ✅ Adicionado /api
 
@@ -150,9 +151,7 @@ export default function Vendas() {
 
       <div className="vendas-page">
         <header className="p-topbar">
-          <div className="p-topbar-title">
-            Vendas <span>Controle</span>
-          </div>
+          <div className="p-topbar-title">Vendas</div>
 
           <div className="p-topbar-actions">
             <button
@@ -201,11 +200,11 @@ export default function Vendas() {
           </div>
 
           {/* TABELA */}
-          <div className="table-card">
-            <div className="table-header">
+          <div className="data-panel">
+            <div className="dp-header">
               <h3>Lista de Vendas</h3>
-              <div className="table-header-right">
-                <div className="search-bar">
+              <div className="dp-header-right">
+                <div className="dp-search">
                   <IconSearch />
                   <input
                     type="text"
@@ -218,20 +217,19 @@ export default function Vendas() {
             </div>
 
             {loading ? (
-              <div className="empty-state">
-                <div className="big-icon"><IconClock style={{ width: 32, height: 32 }} /></div>
+              <div className="dp-empty">
+                <div className="dp-empty-icon"><IconClock style={{ width: 32, height: 32 }} /></div>
                 <p>Carregando vendas...</p>
               </div>
             ) : lista.length === 0 ? (
-              <div className="empty-state">
-                <div className="big-icon"><IconCart style={{ width: 32, height: 32 }} /></div>
+              <div className="dp-empty">
+                <div className="dp-empty-icon"><IconCart style={{ width: 32, height: 32 }} /></div>
                 <p>Nenhuma venda encontrada.<br />Clique em <strong>Nova Venda</strong> para registrar.</p>
               </div>
             ) : (
-              <table>
+              <div className="dp-table-wrap"><table className="dp-table">
                 <thead>
                   <tr>
-                    <th>ID</th>
                     <th>Cliente</th>
                     <th>Vendedor</th>
                     <th>Valor</th>
@@ -244,20 +242,19 @@ export default function Vendas() {
                 <tbody>
                   {lista.map((v) => (
                     <tr key={v.id}>
-                      <td className="td-id">#{v.id}</td>
-                      <td className="td-nome">{v.cliente_nome}</td>
-                      <td className="td-dim">{v.vendedor_nome}</td>
-                      <td className="td-valor"><strong>{formatCurrency(v.valor_total)}</strong></td>
-                      <td className="td-dim">{formatDate(v.data_venda)}</td>
+                      <td className="dp-cell-muted">{v.cliente_nome}</td>
+                      <td className="dp-cell-muted" data-label="Vendedor">{v.vendedor_nome}</td>
+                      <td className="dp-cell-mono" data-label="Valor"><strong>{formatCurrency(v.valor_total)}</strong></td>
+                      <td className="dp-cell-muted" data-label="Data">{formatDate(v.data_venda)}</td>
                       <td>
                         <span className={`badge ${v.status === 1 ? 'badge-success' : 'badge-warning'}`}>
                           {v.status_texto}
                         </span>
                       </td>
                       <td>
-                        <div className="row-actions">
+                        <div className="dp-row-actions">
                           <button 
-                            className="icon-btn view" 
+                            className="dp-btn-icon dp-view" 
                             title="Ver detalhes" 
                             onClick={() => navigate(`/vendas/${v.id}`)}
                           >
@@ -268,7 +265,7 @@ export default function Vendas() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></div>
             )}
           </div>
         </div>
